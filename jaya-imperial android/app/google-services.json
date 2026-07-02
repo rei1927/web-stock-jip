@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "257682185369",
+    "project_id": "jaya-imperial-park",
+    "storage_bucket": "jaya-imperial-park.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:257682185369:android:37e4e8b063c52c83c42c08",
+        "android_client_info": {
+          "package_name": "com.aistudio.jayaimperialpark.hpx9qg"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDNwut-eNUw3mLwa48a2bO0da1kAXkhxe4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,6 @@
+<resources>
+    <string name="app_name">Jaya Imperial</string>
+    <string name="login_btn">Masuk</string>
+    <string name="username_hint">Nama Pengguna</string>
+    <string name="password_hint">Kata Sandi</string>
+</resources>

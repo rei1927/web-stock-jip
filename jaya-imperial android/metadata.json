@@ -1,0 +1,6 @@
+{
+  "name": "Jaya Imperial",
+  "description": "Aplikasi Stok Unit dan Simulasi KPR untuk Jaya Imperial Park.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

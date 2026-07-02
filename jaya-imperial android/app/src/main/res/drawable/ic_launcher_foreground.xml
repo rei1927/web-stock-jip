@@ -1,0 +1,19 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    
+    <!-- Sophisticated real estate building vector design -->
+    <path
+        android:fillColor="#C59F4E"
+        android:pathData="M 54,24 L 84,48 L 77,48 L 77,84 L 31,84 L 31,48 L 24,48 Z" />
+        
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M 46,84 L 46,62 L 62,62 L 62,84 Z" />
+        
+    <path
+        android:fillColor="#13547A"
+        android:pathData="M 40,48 L 40,56 L 48,56 L 48,48 Z M 60,48 L 60,56 L 68,56 L 68,48 Z" />
+</vector>
