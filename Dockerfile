@@ -1,4 +1,4 @@
-FROM php:8.2-apache
+FROM php:8.3-apache
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -7,6 +7,7 @@ RUN apt-get update && apt-get install -y \
     libjpeg-dev \
     libfreetype6-dev \
     libicu-dev \
+    libzip-dev \
     zip \
     unzip \
     git \
@@ -14,7 +15,7 @@ RUN apt-get update && apt-get install -y \
     npm \
     cron \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install pdo pdo_sqlite gd intl
+    && docker-php-ext-install pdo pdo_sqlite gd intl zip
 
 # Enable apache mod_rewrite
 RUN a2enmod rewrite
@@ -34,7 +35,8 @@ WORKDIR /var/www/html
 COPY . /var/www/html
 
 # Install PHP and Node dependencies
-RUN composer install --no-dev --optimize-autoloader
+RUN git config --global --add safe.directory /var/www/html
+RUN COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --optimize-autoloader
 RUN npm install && npm run build
 
 # Ensure database directory exists and set permissions
