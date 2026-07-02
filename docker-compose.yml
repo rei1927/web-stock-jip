@@ -6,7 +6,7 @@ services:
     container_name: web-stock-jip
     restart: unless-stopped
     ports:
-      - "8000:80"
+      - "8010:80"
     volumes:
       - sqlite_data:/var/www/html/database
     environment:
