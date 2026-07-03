@@ -624,8 +624,37 @@ fun BroadcastDialog(
         Surface(shape = RoundedCornerShape(16.dp), color = Color.White) {
             Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 Text("Broadcast Notifikasi", fontWeight = FontWeight.Black, fontSize = 18.sp, color = NavyPrimary)
-                OutlinedTextField(value = title, onValueChange = { title = it }, label = { Text("Judul Notifikasi") }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(10.dp))
-                OutlinedTextField(value = message, onValueChange = { message = it }, label = { Text("Isi Pesan") }, modifier = Modifier.fillMaxWidth(), minLines = 3, shape = RoundedCornerShape(10.dp))
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    label = { Text("Judul Notifikasi", color = NavyPrimary) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(10.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = NavyDark,
+                        unfocusedTextColor = NavyDark,
+                        focusedBorderColor = NavyPrimary,
+                        unfocusedBorderColor = Color.LightGray,
+                        focusedLabelColor = NavyPrimary,
+                        unfocusedLabelColor = Color.Gray
+                    )
+                )
+                OutlinedTextField(
+                    value = message,
+                    onValueChange = { message = it },
+                    label = { Text("Isi Pesan", color = NavyPrimary) },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 3,
+                    shape = RoundedCornerShape(10.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = NavyDark,
+                        unfocusedTextColor = NavyDark,
+                        focusedBorderColor = NavyPrimary,
+                        unfocusedBorderColor = Color.LightGray,
+                        focusedLabelColor = NavyPrimary,
+                        unfocusedLabelColor = Color.Gray
+                    )
+                )
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
                     TextButton(onClick = onDismiss) { Text("Batal", color = Color.Gray) }
                     Spacer(modifier = Modifier.width(8.dp))

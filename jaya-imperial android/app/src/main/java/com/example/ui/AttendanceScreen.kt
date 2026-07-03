@@ -445,15 +445,15 @@ fun FilterDropdown(
             value = selectedName,
             onValueChange = {},
             readOnly = true,
-            label = { Text(label, color = Color.White.copy(alpha = 0.7f)) },
+            label = { Text(label, color = NavyPrimary) },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             colors = OutlinedTextFieldDefaults.colors(
-                focusedTextColor = Color.White,
-                unfocusedTextColor = Color.White,
-                focusedBorderColor = GoldAccent,
-                unfocusedBorderColor = Color.White.copy(alpha = 0.5f),
-                focusedLabelColor = GoldAccent,
-                unfocusedLabelColor = Color.White.copy(alpha = 0.7f)
+                focusedTextColor = NavyDark,
+                unfocusedTextColor = NavyDark,
+                focusedBorderColor = NavyPrimary,
+                unfocusedBorderColor = Color.LightGray,
+                focusedLabelColor = NavyPrimary,
+                unfocusedLabelColor = Color.Gray
             ),
             modifier = Modifier.menuAnchor().fillMaxWidth(),
             textStyle = MaterialTheme.typography.bodySmall
@@ -865,24 +865,24 @@ fun CameraCaptureView(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    OutlinedButton(
-                        onClick = { capturedUri = null },
-                        modifier = Modifier.weight(1f).height(48.dp),
-                        border = BorderStroke(1.dp, Color.White),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
-                    ) {
-                        Text("ULANGI", fontWeight = FontWeight.Bold)
-                    }
+                OutlinedButton(
+                    onClick = { capturedUri = null },
+                    modifier = Modifier.weight(1f).height(48.dp),
+                    border = BorderStroke(1.dp, Color.White),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
+                ) {
+                    Text("ULANGI", fontWeight = FontWeight.Bold)
+                }
 
-                    Button(
-                        onClick = { onImageCaptured(capturedUri!!) },
-                        modifier = Modifier.weight(1f).height(48.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = TersediaGreen),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Text("GUNAKAN FOTO", fontWeight = FontWeight.Bold, color = Color.White)
-                    }
+                Button(
+                    onClick = { onImageCaptured(capturedUri!!) },
+                    modifier = Modifier.weight(1f).height(48.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = TersediaGreen),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("GUNAKAN FOTO", fontWeight = FontWeight.Bold, color = Color.White)
+                }
                 }
             }
         }

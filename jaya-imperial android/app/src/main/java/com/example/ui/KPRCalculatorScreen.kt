@@ -115,6 +115,8 @@ fun KPRCalculatorScreen(
                             .padding(vertical = 4.dp),
                         prefix = { Text("Rp ", color = ContentLight) },
                         colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = NavyDark,
+                            unfocusedTextColor = NavyDark,
                             focusedBorderColor = NavyPrimary,
                             unfocusedBorderColor = BorderLight
                         )
@@ -214,6 +216,8 @@ fun KPRCalculatorScreen(
                             .padding(vertical = 4.dp),
                         suffix = { Text("% / tahun", color = ContentLight) },
                         colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = NavyDark,
+                            unfocusedTextColor = NavyDark,
                             focusedBorderColor = NavyPrimary,
                             unfocusedBorderColor = BorderLight
                         )

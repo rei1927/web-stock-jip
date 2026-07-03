@@ -16,6 +16,7 @@ Route::get('/units', [UnitController::class, 'index']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/profile', [AuthController::class, 'profile']);
     Route::post('/logout', [AuthController::class, 'logout']);
+    Route::post('/users/register', [AuthController::class, 'register']); // For Android sync
 
     // FCM
     Route::post('/fcm-token', [FCMController::class, 'storeToken']);

@@ -326,7 +326,12 @@ fun AddGimmickDialog(
                             modifier = Modifier.menuAnchor().fillMaxWidth(),
                             shape = RoundedCornerShape(10.dp),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = if (selectedUnit != null) TersediaGreen else NavyPrimary
+                                focusedTextColor = NavyDark,
+                                unfocusedTextColor = NavyDark,
+                                focusedBorderColor = if (selectedUnit != null) TersediaGreen else NavyPrimary,
+                                unfocusedBorderColor = Color.LightGray,
+                                focusedLabelColor = NavyPrimary,
+                                unfocusedLabelColor = Color.Gray
                             )
                         )
                         ExposedDropdownMenu(
@@ -376,7 +381,12 @@ fun AddGimmickDialog(
                             modifier = Modifier.menuAnchor().fillMaxWidth(),
                             shape = RoundedCornerShape(10.dp),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = if (selectedSalesperson != null) TersediaGreen else NavyPrimary
+                                focusedTextColor = NavyDark,
+                                unfocusedTextColor = NavyDark,
+                                focusedBorderColor = if (selectedSalesperson != null) TersediaGreen else NavyPrimary,
+                                unfocusedBorderColor = Color.LightGray,
+                                focusedLabelColor = NavyPrimary,
+                                unfocusedLabelColor = Color.Gray
                             )
                         )
                         ExposedDropdownMenu(

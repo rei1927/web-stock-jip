@@ -197,7 +197,7 @@ fun ReviewPenjualanScreen(
         } else if (unit != null) {
             AlertDialog(
                 onDismissRequest = { viewingProposalForUnitId = null },
-                title = { Text("Memuat Berkas...") },
+                title = { Text("Memuat Berkas...", color = NavyDark) },
                 text = {
                     Box(
                         modifier = Modifier.fillMaxWidth().height(80.dp),
@@ -208,7 +208,7 @@ fun ReviewPenjualanScreen(
                 },
                 confirmButton = {
                     TextButton(onClick = { viewingProposalForUnitId = null }) {
-                        Text("Batal")
+                        Text("Batal", color = NavyPrimary)
                     }
                 }
             )
@@ -590,9 +590,7 @@ fun SoldProposalFormDialogInternal(
     // Gimmick state: Initial 4 empty strings
     val gimmicks = remember { mutableStateListOf("", "", "", "") }
 
-    val isValid = namaLengkap.isNotBlank() &&
-            noKtpConsumer.length >= 16 &&
-            noTelpSeluler.isNotBlank()
+    val isValid = namaLengkap.isNotBlank()
 
     val finalAlamatSurat = if (alamatSuratSda) "SDA (Sesuai Data Alamat KTP)" else alamatSurat
 
@@ -638,7 +636,7 @@ fun SoldProposalFormDialogInternal(
                             Icon(Icons.Default.EditNote, contentDescription = null, tint = NavyPrimary)
                             Spacer(modifier = Modifier.width(10.dp))
                             Text(
-                                "Silakan lengkapi 20 Kolom data administrasi sesuai Formulir Tanda Jadi sebelum menyetujui penjualan.",
+                                "Silakan lengkapi data administrasi sesuai Formulir Tanda Jadi sebelum menyetujui penjualan.",
                                 fontSize = 11.sp,
                                 color = NavyDark,
                                 lineHeight = 15.sp
@@ -656,26 +654,149 @@ fun SoldProposalFormDialogInternal(
                             Text("1. DATA KONSUMEN", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = NavyPrimary)
                             Divider(color = BorderLight)
 
-                            OutlinedTextField(value = namaLengkap, onValueChange = { namaLengkap = it }, label = { Text("1. Nama Lengkap (Sesuai KTP) *") }, modifier = Modifier.fillMaxWidth())
-                            OutlinedTextField(value = alamatKtp, onValueChange = { alamatKtp = it }, label = { Text("2. Alamat KTP *") }, modifier = Modifier.fillMaxWidth(), minLines = 2)
+                            OutlinedTextField(
+                                value = namaLengkap,
+                                onValueChange = { namaLengkap = it },
+                                label = { Text("1. Nama Lengkap (Sesuai KTP) *", color = NavyPrimary) },
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedTextColor = NavyDark,
+                                    unfocusedTextColor = NavyDark,
+                                    focusedBorderColor = NavyPrimary,
+                                    unfocusedBorderColor = Color.LightGray,
+                                    focusedLabelColor = NavyPrimary,
+                                    unfocusedLabelColor = Color.Gray
+                                )
+                            )
+                            OutlinedTextField(
+                                value = alamatKtp,
+                                onValueChange = { alamatKtp = it },
+                                label = { Text("2. Alamat KTP", color = NavyPrimary) },
+                                modifier = Modifier.fillMaxWidth(),
+                                minLines = 2,
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedTextColor = NavyDark,
+                                    unfocusedTextColor = NavyDark,
+                                    focusedBorderColor = NavyPrimary,
+                                    unfocusedBorderColor = Color.LightGray,
+                                    focusedLabelColor = NavyPrimary,
+                                    unfocusedLabelColor = Color.Gray
+                                )
+                            )
 
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Checkbox(checked = alamatSuratSda, onCheckedChange = { alamatSuratSda = it })
-                                Text("3. Alamat Surat: SDA (Sesuai Data Alamat)", fontSize = 12.sp)
+                                Text("3. Alamat Surat: SDA (Sesuai Data Alamat)", fontSize = 12.sp, color = NavyDark)
                             }
                             if (!alamatSuratSda) {
-                                OutlinedTextField(value = alamatSurat, onValueChange = { alamatSurat = it }, label = { Text("Alamat Surat (Detail)") }, modifier = Modifier.fillMaxWidth(), minLines = 2)
+                                OutlinedTextField(
+                                    value = alamatSurat,
+                                    onValueChange = { alamatSurat = it },
+                                    label = { Text("Alamat Surat (Detail)", color = NavyPrimary) },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    minLines = 2,
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedTextColor = NavyDark,
+                                        unfocusedTextColor = NavyDark,
+                                        focusedBorderColor = NavyPrimary,
+                                        unfocusedBorderColor = Color.LightGray,
+                                        focusedLabelColor = NavyPrimary,
+                                        unfocusedLabelColor = Color.Gray
+                                    )
+                                )
                             }
 
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                OutlinedTextField(value = noTelpRumah, onValueChange = { noTelpRumah = it }, label = { Text("4. Telp Rumah") }, modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone))
-                                OutlinedTextField(value = noTelpSeluler, onValueChange = { noTelpSeluler = it }, label = { Text("5. Telp Seluler *") }, modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone))
+                                OutlinedTextField(
+                                    value = noTelpRumah,
+                                    onValueChange = { noTelpRumah = it },
+                                    label = { Text("4. Telp Rumah", color = NavyPrimary) },
+                                    modifier = Modifier.weight(1f),
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedTextColor = NavyDark,
+                                        unfocusedTextColor = NavyDark,
+                                        focusedBorderColor = NavyPrimary,
+                                        unfocusedBorderColor = Color.LightGray,
+                                        focusedLabelColor = NavyPrimary,
+                                        unfocusedLabelColor = Color.Gray
+                                    )
+                                )
+                                OutlinedTextField(
+                                    value = noTelpSeluler,
+                                    onValueChange = { noTelpSeluler = it },
+                                    label = { Text("5. Telp Seluler", color = NavyPrimary) },
+                                    modifier = Modifier.weight(1f),
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedTextColor = NavyDark,
+                                        unfocusedTextColor = NavyDark,
+                                        focusedBorderColor = NavyPrimary,
+                                        unfocusedBorderColor = Color.LightGray,
+                                        focusedLabelColor = NavyPrimary,
+                                        unfocusedLabelColor = Color.Gray
+                                    )
+                                )
                             }
 
-                            OutlinedTextField(value = noKtpConsumer, onValueChange = { noKtpConsumer = it }, label = { Text("6. No. KTP Konsumen *") }, modifier = Modifier.fillMaxWidth(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
-                            OutlinedTextField(value = noNpwp, onValueChange = { noNpwp = it }, label = { Text("7. No. NPWP") }, modifier = Modifier.fillMaxWidth())
-                            OutlinedTextField(value = noKk, onValueChange = { noKk = it }, label = { Text("8. No. KK") }, modifier = Modifier.fillMaxWidth())
-                            OutlinedTextField(value = email, onValueChange = { email = it }, label = { Text("20. E-mail") }, modifier = Modifier.fillMaxWidth(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email))
+                            OutlinedTextField(
+                                value = noKtpConsumer,
+                                onValueChange = { noKtpConsumer = it },
+                                label = { Text("6. No. KTP Konsumen", color = NavyPrimary) },
+                                modifier = Modifier.fillMaxWidth(),
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedTextColor = NavyDark,
+                                    unfocusedTextColor = NavyDark,
+                                    focusedBorderColor = NavyPrimary,
+                                    unfocusedBorderColor = Color.LightGray,
+                                    focusedLabelColor = NavyPrimary,
+                                    unfocusedLabelColor = Color.Gray
+                                )
+                            )
+                            OutlinedTextField(
+                                value = noNpwp,
+                                onValueChange = { noNpwp = it },
+                                label = { Text("7. No. NPWP", color = NavyPrimary) },
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedTextColor = NavyDark,
+                                    unfocusedTextColor = NavyDark,
+                                    focusedBorderColor = NavyPrimary,
+                                    unfocusedBorderColor = Color.LightGray,
+                                    focusedLabelColor = NavyPrimary,
+                                    unfocusedLabelColor = Color.Gray
+                                )
+                            )
+                            OutlinedTextField(
+                                value = noKk,
+                                onValueChange = { noKk = it },
+                                label = { Text("8. No. KK", color = NavyPrimary) },
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedTextColor = NavyDark,
+                                    unfocusedTextColor = NavyDark,
+                                    focusedBorderColor = NavyPrimary,
+                                    unfocusedBorderColor = Color.LightGray,
+                                    focusedLabelColor = NavyPrimary,
+                                    unfocusedLabelColor = Color.Gray
+                                )
+                            )
+                            OutlinedTextField(
+                                value = email,
+                                onValueChange = { email = it },
+                                label = { Text("20. E-mail", color = NavyPrimary) },
+                                modifier = Modifier.fillMaxWidth(),
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedTextColor = NavyDark,
+                                    unfocusedTextColor = NavyDark,
+                                    focusedBorderColor = NavyPrimary,
+                                    unfocusedBorderColor = Color.LightGray,
+                                    focusedLabelColor = NavyPrimary,
+                                    unfocusedLabelColor = Color.Gray
+                                )
+                            )
                         }
                     }
 
@@ -692,22 +813,22 @@ fun SoldProposalFormDialogInternal(
                             DetailRowRecap("9. Type / Blok", "${unit.typeName} - ${unit.block}")
                             DetailRowRecap("10. Cluster", unit.clusterName)
 
-                            Text("11. Tujuan Pembelian", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                            Text("11. Tujuan Pembelian", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = NavyDark)
                             FlowRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                                 listOf("Investasi", "Tempat Tinggal", "Lain-lain").forEach { item ->
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         RadioButton(selected = tujuanPembelian == item, onClick = { tujuanPembelian = item })
-                                        Text(item, fontSize = 11.sp)
+                                        Text(item, fontSize = 11.sp, color = NavyDark)
                                     }
                                 }
                             }
 
-                            Text("12. Sumber Dana", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                            Text("12. Sumber Dana", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = NavyDark)
                             Column {
                                 listOf("Gaji / Upah", "Pemberian Orang Tua", "Warisan", "Hasil/Laba Usaha").forEach { item ->
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         RadioButton(selected = sumberDana == item, onClick = { sumberDana = item })
-                                        Text(item, fontSize = 11.sp)
+                                        Text(item, fontSize = 11.sp, color = NavyDark)
                                     }
                                 }
                             }
@@ -724,41 +845,177 @@ fun SoldProposalFormDialogInternal(
                             Text("3. PEMBAYARAN & BIAYA", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = NavyPrimary)
                             Divider(color = BorderLight)
 
-                            Text("13. Sistem Pembayaran", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                            Text("13. Sistem Pembayaran", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = NavyDark)
                             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                                 listOf("Tunai", "KPR").forEach { item ->
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         RadioButton(selected = sistemPembayaran == item, onClick = { sistemPembayaran = item })
-                                        Text(item, fontSize = 12.sp)
+                                        Text(item, fontSize = 12.sp, color = NavyDark)
                                     }
                                 }
                             }
                             if (sistemPembayaran == "KPR") {
-                                OutlinedTextField(value = kprPersen, onValueChange = { kprPersen = it }, label = { Text("KPR _ x _ %") }, modifier = Modifier.fillMaxWidth())
+                                OutlinedTextField(
+                                    value = kprPersen,
+                                    onValueChange = { kprPersen = it },
+                                    label = { Text("KPR _ x _ %", color = NavyPrimary) },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedTextColor = NavyDark,
+                                        unfocusedTextColor = NavyDark,
+                                        focusedBorderColor = NavyPrimary,
+                                        unfocusedBorderColor = Color.LightGray,
+                                        focusedLabelColor = NavyPrimary,
+                                        unfocusedLabelColor = Color.Gray
+                                    )
+                                )
                             }
 
-                            OutlinedTextField(value = hargaJualString, onValueChange = { hargaJualString = it }, label = { Text("14. Harga Jual Inc. PPN *") }, modifier = Modifier.fillMaxWidth(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
+                            OutlinedTextField(
+                                value = hargaJualString,
+                                onValueChange = { hargaJualString = it },
+                                label = { Text("14. Harga Jual Inc. PPN", color = NavyPrimary) },
+                                modifier = Modifier.fillMaxWidth(),
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedTextColor = NavyDark,
+                                    unfocusedTextColor = NavyDark,
+                                    focusedBorderColor = NavyPrimary,
+                                    unfocusedBorderColor = Color.LightGray,
+                                    focusedLabelColor = NavyPrimary,
+                                    unfocusedLabelColor = Color.Gray
+                                )
+                            )
 
                             if (sistemPembayaran == "KPR") {
-                                OutlinedTextField(value = plafondKprString, onValueChange = { plafondKprString = it }, label = { Text("15. Rencana Plafond KPR") }, modifier = Modifier.fillMaxWidth(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
+                                OutlinedTextField(
+                                    value = plafondKprString,
+                                    onValueChange = { plafondKprString = it },
+                                    label = { Text("15. Rencana Plafond KPR", color = NavyPrimary) },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedTextColor = NavyDark,
+                                        unfocusedTextColor = NavyDark,
+                                        focusedBorderColor = NavyPrimary,
+                                        unfocusedBorderColor = Color.LightGray,
+                                        focusedLabelColor = NavyPrimary,
+                                        unfocusedLabelColor = Color.Gray
+                                    )
+                                )
                             }
 
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                OutlinedTextField(value = tandaJadiString, onValueChange = { tandaJadiString = it }, label = { Text("16. Tanda Jadi (Rp)") }, modifier = Modifier.weight(1.2f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
-                                OutlinedTextField(value = tandaJadiDate, onValueChange = { tandaJadiDate = it }, label = { Text("Tgl Tanda Jadi") }, modifier = Modifier.weight(1f))
+                                OutlinedTextField(
+                                    value = tandaJadiString,
+                                    onValueChange = { tandaJadiString = it },
+                                    label = { Text("16. Tanda Jadi (Rp)", color = NavyPrimary) },
+                                    modifier = Modifier.weight(1.2f),
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedTextColor = NavyDark,
+                                        unfocusedTextColor = NavyDark,
+                                        focusedBorderColor = NavyPrimary,
+                                        unfocusedBorderColor = Color.LightGray,
+                                        focusedLabelColor = NavyPrimary,
+                                        unfocusedLabelColor = Color.Gray
+                                    )
+                                )
+                                OutlinedTextField(
+                                    value = tandaJadiDate,
+                                    onValueChange = { tandaJadiDate = it },
+                                    label = { Text("Tgl Tanda Jadi", color = NavyPrimary) },
+                                    modifier = Modifier.weight(1f),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedTextColor = NavyDark,
+                                        unfocusedTextColor = NavyDark,
+                                        focusedBorderColor = NavyPrimary,
+                                        unfocusedBorderColor = Color.LightGray,
+                                        focusedLabelColor = NavyPrimary,
+                                        unfocusedLabelColor = Color.Gray
+                                    )
+                                )
                             }
 
                             if (sistemPembayaran == "KPR") {
                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    OutlinedTextField(value = uMukaString, onValueChange = { uMukaString = it }, label = { Text("17. U. Muka (Rp)") }, modifier = Modifier.weight(1.2f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
-                                    OutlinedTextField(value = uMukaBln, onValueChange = { uMukaBln = it }, label = { Text("Jml Bln") }, modifier = Modifier.weight(0.8f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
+                                    OutlinedTextField(
+                                        value = uMukaString,
+                                        onValueChange = { uMukaString = it },
+                                        label = { Text("17. U. Muka (Rp)", color = NavyPrimary) },
+                                        modifier = Modifier.weight(1.2f),
+                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                        colors = OutlinedTextFieldDefaults.colors(
+                                            focusedTextColor = NavyDark,
+                                            unfocusedTextColor = NavyDark,
+                                            focusedBorderColor = NavyPrimary,
+                                            unfocusedBorderColor = Color.LightGray,
+                                            focusedLabelColor = NavyPrimary,
+                                            unfocusedLabelColor = Color.Gray
+                                        )
+                                    )
+                                    OutlinedTextField(
+                                        value = uMukaBln,
+                                        onValueChange = { uMukaBln = it },
+                                        label = { Text("Jml Bln", color = NavyPrimary) },
+                                        modifier = Modifier.weight(0.8f),
+                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                        colors = OutlinedTextFieldDefaults.colors(
+                                            focusedTextColor = NavyDark,
+                                            unfocusedTextColor = NavyDark,
+                                            focusedBorderColor = NavyPrimary,
+                                            unfocusedBorderColor = Color.LightGray,
+                                            focusedLabelColor = NavyPrimary,
+                                            unfocusedLabelColor = Color.Gray
+                                        )
+                                    )
                                 }
                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    OutlinedTextField(value = uMukaPertamaString, onValueChange = { uMukaPertamaString = it }, label = { Text("18. U. Muka I (Rp)") }, modifier = Modifier.weight(1.2f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
-                                    OutlinedTextField(value = uMukaPertamaDate, onValueChange = { uMukaPertamaDate = it }, label = { Text("Tgl Pembayaran") }, modifier = Modifier.weight(1f))
+                                    OutlinedTextField(
+                                        value = uMukaPertamaString,
+                                        onValueChange = { uMukaPertamaString = it },
+                                        label = { Text("18. U. Muka I (Rp)", color = NavyPrimary) },
+                                        modifier = Modifier.weight(1.2f),
+                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                        colors = OutlinedTextFieldDefaults.colors(
+                                            focusedTextColor = NavyDark,
+                                            unfocusedTextColor = NavyDark,
+                                            focusedBorderColor = NavyPrimary,
+                                            unfocusedBorderColor = Color.LightGray,
+                                            focusedLabelColor = NavyPrimary,
+                                            unfocusedLabelColor = Color.Gray
+                                        )
+                                    )
+                                    OutlinedTextField(
+                                        value = uMukaPertamaDate,
+                                        onValueChange = { uMukaPertamaDate = it },
+                                        label = { Text("Tgl Pembayaran", color = NavyPrimary) },
+                                        modifier = Modifier.weight(1f),
+                                        colors = OutlinedTextFieldDefaults.colors(
+                                            focusedTextColor = NavyDark,
+                                            unfocusedTextColor = NavyDark,
+                                            focusedBorderColor = NavyPrimary,
+                                            unfocusedBorderColor = Color.LightGray,
+                                            focusedLabelColor = NavyPrimary,
+                                            unfocusedLabelColor = Color.Gray
+                                        )
+                                    )
                                 }
                             } else {
-                                OutlinedTextField(value = angsuranPertamaText, onValueChange = { angsuranPertamaText = it }, label = { Text("19. Angsuran Pertama (Cash)") }, modifier = Modifier.fillMaxWidth())
+                                OutlinedTextField(
+                                    value = angsuranPertamaText,
+                                    onValueChange = { angsuranPertamaText = it },
+                                    label = { Text("19. Angsuran Pertama (Cash)", color = NavyPrimary) },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedTextColor = NavyDark,
+                                        unfocusedTextColor = NavyDark,
+                                        focusedBorderColor = NavyPrimary,
+                                        unfocusedBorderColor = Color.LightGray,
+                                        focusedLabelColor = NavyPrimary,
+                                        unfocusedLabelColor = Color.Gray
+                                    )
+                                )
                             }
                         }
                     }
@@ -777,10 +1034,18 @@ fun SoldProposalFormDialogInternal(
                                 OutlinedTextField(
                                     value = gimmickText,
                                     onValueChange = { gimmicks[index] = it },
-                                    label = { Text("Gimmick ${index + 1}") },
+                                    label = { Text("Gimmick ${index + 1}", color = NavyPrimary) },
                                     modifier = Modifier.fillMaxWidth(),
                                     placeholder = { Text("Masukkan rincian gimmick...") },
-                                    shape = RoundedCornerShape(8.dp)
+                                    shape = RoundedCornerShape(8.dp),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedTextColor = NavyDark,
+                                        unfocusedTextColor = NavyDark,
+                                        focusedBorderColor = NavyPrimary,
+                                        unfocusedBorderColor = Color.LightGray,
+                                        focusedLabelColor = NavyPrimary,
+                                        unfocusedLabelColor = Color.Gray
+                                    )
                                 )
                             }
 
@@ -788,9 +1053,9 @@ fun SoldProposalFormDialogInternal(
                                 onClick = { gimmicks.add("") },
                                 modifier = Modifier.align(Alignment.CenterHorizontally)
                             ) {
-                                Icon(Icons.Default.Add, contentDescription = null)
+                                Icon(Icons.Default.Add, contentDescription = null, tint = NavyPrimary)
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("TAMBAH GIMMICK")
+                                Text("TAMBAH GIMMICK", color = NavyPrimary)
                             }
                         }
                     }

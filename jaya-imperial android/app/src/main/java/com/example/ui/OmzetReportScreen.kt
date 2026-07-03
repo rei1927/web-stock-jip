@@ -230,13 +230,23 @@ fun OmzetReportScreen(
                                 FilterChip(
                                     selected = selectedSalespersonFilter == null,
                                     onClick = { selectedSalespersonFilter = null },
-                                    label = { Text("Semua Tim", fontSize = 10.sp) }
+                                    label = { Text("Semua Tim", fontSize = 10.sp) },
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        labelColor = NavyDark,
+                                        selectedLabelColor = Color.White,
+                                        selectedContainerColor = NavyPrimary
+                                    )
                                 )
                                 teamList.forEach { member ->
                                     FilterChip(
                                         selected = selectedSalespersonFilter == member.username,
                                         onClick = { selectedSalespersonFilter = member.username },
-                                        label = { Text(member.name.substringBefore(" "), fontSize = 10.sp) }
+                                        label = { Text(member.name.substringBefore(" "), fontSize = 10.sp) },
+                                        colors = FilterChipDefaults.filterChipColors(
+                                            labelColor = NavyDark,
+                                            selectedLabelColor = Color.White,
+                                            selectedContainerColor = NavyPrimary
+                                        )
                                     )
                                 }
                             }
@@ -272,13 +282,23 @@ fun OmzetReportScreen(
                                 FilterChip(
                                     selected = selectedManagerFilter == null,
                                     onClick = { selectedManagerFilter = null },
-                                    label = { Text("Semua Tim", fontSize = 10.sp) }
+                                    label = { Text("Semua Tim", fontSize = 10.sp) },
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        labelColor = NavyDark,
+                                        selectedLabelColor = Color.White,
+                                        selectedContainerColor = NavyPrimary
+                                    )
                                 )
                                 managers.forEach { mgr ->
                                     FilterChip(
                                         selected = selectedManagerFilter == mgr.username,
                                         onClick = { selectedManagerFilter = mgr.username },
-                                        label = { Text(mgr.name.substringBefore(" "), fontSize = 10.sp) }
+                                        label = { Text(mgr.name.substringBefore(" "), fontSize = 10.sp) },
+                                        colors = FilterChipDefaults.filterChipColors(
+                                            labelColor = NavyDark,
+                                            selectedLabelColor = Color.White,
+                                            selectedContainerColor = NavyPrimary
+                                        )
                                     )
                                 }
                             }
@@ -300,7 +320,12 @@ fun OmzetReportScreen(
                                     FilterChip(
                                         selected = selectedSalespersonFilter == null,
                                         onClick = { selectedSalespersonFilter = null },
-                                        label = { Text("Semua Sales", fontSize = 10.sp) }
+                                        label = { Text("Semua Sales", fontSize = 10.sp) },
+                                        colors = FilterChipDefaults.filterChipColors(
+                                            labelColor = NavyDark,
+                                            selectedLabelColor = Color.White,
+                                            selectedContainerColor = NavyPrimary
+                                        )
                                     )
                                     val filteredAgents = if (selectedManagerFilter != null) {
                                         salespersons.filter { it.managerName == selectedManagerFilter }
@@ -310,7 +335,12 @@ fun OmzetReportScreen(
                                         FilterChip(
                                             selected = selectedSalespersonFilter == agent.username,
                                             onClick = { selectedSalespersonFilter = agent.username },
-                                            label = { Text(agent.name.substringBefore(" "), fontSize = 10.sp) }
+                                            label = { Text(agent.name.substringBefore(" "), fontSize = 10.sp) },
+                                            colors = FilterChipDefaults.filterChipColors(
+                                                labelColor = NavyDark,
+                                                selectedLabelColor = Color.White,
+                                                selectedContainerColor = NavyPrimary
+                                            )
                                         )
                                     }
                                 }

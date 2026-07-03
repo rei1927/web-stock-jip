@@ -135,6 +135,8 @@ fun StockListScreen(
                 singleLine = true,
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = NavyDark,
+                    unfocusedTextColor = NavyDark,
                     focusedBorderColor = NavyPrimary,
                     unfocusedBorderColor = BorderLight,
                     focusedContainerColor = Color.White,

@@ -48,17 +48,24 @@ class PropertyRepository(private val propertyDao: PropertyDao) {
             val remoteUnitsDto = apiService.getUnitsByCluster(clusterName)
             val existingUnits = propertyDao.getAllUnitsSync()
 
+            // 1. Identifikasi unit yang harus di-hapus (ada di HP tapi tidak ada di Web)
+            val remoteKeys = remoteUnitsDto.map { "${it.clusterName}-${it.block}" }
+            val unitsToDelete = existingUnits.filter { local ->
+                val isSameCluster = clusterName == null || local.clusterName == clusterName
+                val isMissingFromRemote = !remoteKeys.contains("${local.clusterName}-${local.block}")
+                isSameCluster && isMissingFromRemote && local.status != "Pending Sold"
+            }
+            unitsToDelete.forEach { propertyDao.deleteUnit(it) }
+
+            // 2. Tambah atau Perbarui unit dari Web
             if (remoteUnitsDto.isNotEmpty()) {
                 remoteUnitsDto.forEach { dto ->
                     val remoteUnit = dto.toEntity()
-                    // Cari unit lokal yang sama berdasarkan Klaster dan Blok
                     val localMatch = existingUnits.find {
                         it.clusterName == remoteUnit.clusterName && it.block == remoteUnit.block
                     }
 
                     if (localMatch != null) {
-                        // Update unit yang ada, tapi JANGAN timpa status jika lokal sedang "Pending Sold"
-                        // kecuali server bilang sudah "Terjual"
                         val finalStatus = if (localMatch.status == "Pending Sold" && remoteUnit.status != "Terjual") {
                             "Pending Sold"
                         } else {
@@ -72,7 +79,6 @@ class PropertyRepository(private val propertyDao: PropertyDao) {
                             actionUserLabel = remoteUnit.actionUserLabel ?: localMatch.actionUserLabel
                         ))
                     } else {
-                        // Jika unit baru benar-benar tidak ada, masukkan ke DB
                         propertyDao.insertUnit(remoteUnit)
                     }
                 }

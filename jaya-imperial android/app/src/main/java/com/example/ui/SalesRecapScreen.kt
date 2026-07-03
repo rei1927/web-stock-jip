@@ -1,5 +1,8 @@
 package com.example.ui
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -15,11 +18,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.example.data.HousingUnit
 import com.example.ui.theme.*
 import androidx.compose.ui.window.Dialog
@@ -75,7 +81,7 @@ fun SalesRecapScreen(
                     modifier = Modifier.padding(16.dp).fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceAround
                 ) {
-                    StatItemRecap("HOLD", mySales.count { it.status == "Hold" }, GoldAccent)
+                    StatItemRecap("HOLD", mySales.count { it.status == "Hold" || it.status == "Pending Sold" }, GoldAccent)
                     StatItemRecap("PENDING", mySales.count { it.status == "Pending Sold" }, NavyPrimary)
                     StatItemRecap("SOLD", mySales.count { it.status == "Terjual" }, TersediaGreen)
                 }
@@ -199,7 +205,7 @@ fun UnitDetailDialogRecap(
                                     shape = RoundedCornerShape(8.dp)
                                 ) {
                                     Text(
-                                        text = unit.status.uppercase(),
+                                        text = if (unit.status == "Pending Sold") "HOLD (PENGAJUAN)" else unit.status.uppercase(),
                                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                                         fontSize = 10.sp,
                                         fontWeight = FontWeight.Bold,
@@ -222,11 +228,11 @@ fun UnitDetailDialogRecap(
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                 Column {
                                     Text("Tipe", fontSize = 11.sp, color = Color.Gray)
-                                    Text(unit.typeName, fontWeight = FontWeight.Bold)
+                                    Text(unit.typeName, fontWeight = FontWeight.Bold, color = NavyDark)
                                 }
                                 Column(horizontalAlignment = Alignment.End) {
                                     Text("Luas LB/LT", fontSize = 11.sp, color = Color.Gray)
-                                    Text("${unit.buildingArea}/${unit.landArea} m²", fontWeight = FontWeight.Bold)
+                                    Text("${unit.buildingArea}/${unit.landArea} m²", fontWeight = FontWeight.Bold, color = NavyDark)
                                 }
                             }
 
@@ -235,7 +241,7 @@ fun UnitDetailDialogRecap(
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                 Column {
                                     Text("Kamar", fontSize = 11.sp, color = Color.Gray)
-                                    Text("${unit.bedrooms} KT / ${unit.bathrooms} KM", fontWeight = FontWeight.Bold)
+                                    Text("${unit.bedrooms} KT / ${unit.bathrooms} KM", fontWeight = FontWeight.Bold, color = NavyDark)
                                 }
                             }
                         }
@@ -250,9 +256,9 @@ fun UnitDetailDialogRecap(
                             colors = ButtonDefaults.buttonColors(containerColor = TersediaGreen),
                             shape = RoundedCornerShape(12.dp)
                         ) {
-                            Icon(Icons.Default.AddAPhoto, contentDescription = null)
+                            Icon(Icons.Default.AddPhotoAlternate, contentDescription = null)
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Ajukan Sold (Upload Form)", fontWeight = FontWeight.Bold)
+                            Text("Ajukan Sold (Upload Form UTJ)", fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -267,15 +273,22 @@ fun SoldPhotoSubmissionDialogRecap(
     onDismiss: () -> Unit,
     onSubmit: (String) -> Unit
 ) {
-    var photoUploaded by remember { mutableStateOf(false) }
+    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+
+    // Gallery Launcher
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        selectedImageUri = uri
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Unggah Form Penjualan", fontWeight = FontWeight.Bold) },
+        title = { Text("Unggah Form UTJ", fontWeight = FontWeight.Bold, color = NavyDark) },
         text = {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
-                    "Silakan unggah foto fisik Formulir Penjualan untuk unit ${unit.clusterName} - ${unit.block}.",
+                    "Silakan pilih foto Formulir UTJ dari galeri untuk unit ${unit.clusterName} - ${unit.block}.",
                     fontSize = 12.sp,
                     color = ContentSecondary,
                     textAlign = TextAlign.Center
@@ -285,32 +298,40 @@ fun SoldPhotoSubmissionDialogRecap(
                     modifier = Modifier
                         .size(120.dp)
                         .background(NavyPrimary.copy(alpha = 0.05f), shape = RoundedCornerShape(16.dp))
-                        .clickable { photoUploaded = true }
+                        .clickable { launcher.launch("image/*") }
                         .border(1.dp, NavyPrimary.copy(alpha = 0.2f), shape = RoundedCornerShape(16.dp)),
                     contentAlignment = Alignment.Center
                 ) {
-                    if (!photoUploaded) {
+                    if (selectedImageUri == null) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(Icons.Default.AddAPhoto, contentDescription = null, tint = NavyPrimary, modifier = Modifier.size(32.dp))
-                            Text("Ambil Foto", fontSize = 10.sp, color = NavyPrimary, fontWeight = FontWeight.Bold)
+                            Icon(Icons.Default.PhotoLibrary, contentDescription = null, tint = NavyPrimary, modifier = Modifier.size(32.dp))
+                            Text("Buka Galeri", fontSize = 10.sp, color = NavyPrimary, fontWeight = FontWeight.Bold)
                         }
                     } else {
-                        Icon(Icons.Default.CheckCircle, contentDescription = null, tint = TersediaGreen, modifier = Modifier.size(48.dp))
+                        AsyncImage(
+                            model = selectedImageUri,
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(16.dp)),
+                            contentScale = ContentScale.Crop
+                        )
                     }
+                }
+                if (selectedImageUri != null) {
+                    Text("Foto dipilih", fontSize = 11.sp, color = TersediaGreen, modifier = Modifier.padding(top = 8.dp))
                 }
             }
         },
         confirmButton = {
             Button(
-                onClick = { onSubmit("content://simulated/path/to/photo.jpg") },
-                enabled = photoUploaded,
+                onClick = { onSubmit(selectedImageUri.toString()) },
+                enabled = selectedImageUri != null,
                 colors = ButtonDefaults.buttonColors(containerColor = NavyPrimary)
             ) {
                 Text("Kirim Pengajuan")
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Batal") }
+            TextButton(onClick = onDismiss) { Text("Batal", color = NavyPrimary) }
         }
     )
 }
@@ -337,7 +358,7 @@ fun SalesRecapItemCard(
 
     val statusLabel = when (unit.status) {
         "Hold" -> "HOLD"
-        "Pending Sold" -> "PENDING"
+        "Pending Sold" -> "HOLD (PENGAJUAN)"
         "Terjual" -> "SOLD"
         else -> unit.status.uppercase()
     }
