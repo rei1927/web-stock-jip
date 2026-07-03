@@ -30,5 +30,16 @@ class SuperAdminSeeder extends Seeder
             ]);
             $this->command->info('Akun reizarachmattullah@gmail.com berhasil dibuat dengan role super_admin. Password default: password123');
         }
+
+        // Sync superadmin@jip.com with Android
+        User::updateOrCreate(
+            ['email' => 'superadmin@jip.com'],
+            [
+                'name' => 'Super Admin',
+                'password' => Hash::make('123456'),
+                'role' => 'super_admin'
+            ]
+        );
+        $this->command->info('Akun superadmin@jip.com berhasil disinkronisasi.');
     }
 }
