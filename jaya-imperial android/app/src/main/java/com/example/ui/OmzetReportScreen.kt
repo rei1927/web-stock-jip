@@ -485,18 +485,16 @@ fun OmzetReportScreen(
                     Column(modifier = Modifier.padding(14.dp)) {
                         if (role == "Sales Manager") {
                             // Compare Siska and Ani
-                            val teamLogs = rawSalesLogs.filter { it.year == selectedYear }
-                            val siskaLogs = teamLogs.filter { it.soldBy == "siska" }
-                            val aniLogs = teamLogs.filter { it.soldBy == "ani" }
+                            val siskaLogs = reportingLogs.filter { it.soldBy == "siska" }
+                            val aniLogs = reportingLogs.filter { it.soldBy == "ani" }
 
                             LeaderRow(name = "Siska Lestari (Sales)", unitCount = siskaLogs.size, omzetVal = siskaLogs.sumOf { it.salePrice })
                             Divider(modifier = Modifier.padding(vertical = 10.dp), color = BorderLight)
                             LeaderRow(name = "Ani Wijaya (Sales)", unitCount = aniLogs.size, omzetVal = aniLogs.sumOf { it.salePrice })
                         } else {
                             // Admin / Super Admin compares Rudi's group vs Hendra's group
-                            val teamLogs = rawSalesLogs.filter { it.year == selectedYear }
-                            val rudiTeamLogs = teamLogs.filter { it.managerName == "rudi" }
-                            val hendraTeamLogs = teamLogs.filter { it.managerName == "hendra" }
+                            val rudiTeamLogs = reportingLogs.filter { it.managerName == "rudi" }
+                            val hendraTeamLogs = reportingLogs.filter { it.managerName == "hendra" }
 
                             LeaderRow(name = "Kelompok Tim Rudi (SM)", unitCount = rudiTeamLogs.size, omzetVal = rudiTeamLogs.sumOf { it.salePrice })
                             Divider(modifier = Modifier.padding(vertical = 10.dp), color = BorderLight)
@@ -535,73 +533,45 @@ fun OmzetReportScreen(
                 }
             }
 
-            // Period Selector launcher
-            Button(
-                onClick = { showYearSelector = true },
-                colors = ButtonDefaults.buttonColors(containerColor = NavyPrimary),
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp)
-                    .testTag("btn_select_period")
-            ) {
-                Text("PILIH TAHUN PRESTASI", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-            }
-
             Spacer(modifier = Modifier.height(24.dp))
         }
     }
 
-    // Modal Period Selector
-    if (showYearSelector) {
-        AlertDialog(
-            onDismissRequest = { showYearSelector = false },
-            title = { Text("Pilih Periode Tahun", fontWeight = FontWeight.Bold, color = NavyDark, fontSize = 18.sp) },
-            text = {
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    Text("Pilih tahun operasional untuk melihat volume dan riwayat omzet properti:", fontSize = 13.sp, color = Color.Gray, modifier = Modifier.padding(bottom = 12.dp))
-
-                    listOf(2026, 2025, 2024).forEach { year ->
-                        Card(
-                            colors = CardDefaults.cardColors(
-                                containerColor = if (year == selectedYear) NavyPrimary.copy(alpha = 0.1f) else Color.Transparent
-                            ),
-                            shape = RoundedCornerShape(10.dp),
-                            modifier = Modifier
-                                            .fillMaxWidth()
-                                .clickable {
-                                    viewModel.setSelectedYear(year)
-                                    showYearSelector = false
-                                }
-                                .padding(vertical = 4.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(14.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "Periode Tahun $year",
-                                    fontWeight = if (year == selectedYear) FontWeight.Bold else FontWeight.Normal,
-                                    color = if (year == selectedYear) NavyPrimary else ContentPrimary
-                                )
-                                if (year == selectedYear) {
-                                    Icon(
-                                        imageVector = Icons.Default.Info,
-                                        contentDescription = "Aktif",
-                                        tint = NavyPrimary,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
+    // --- DATE PICKER DIALOGS ---
+    if (showStartDatePicker) {
+        val datePickerState = rememberDatePickerState(initialSelectedDateMillis = startDate)
+        DatePickerDialog(
+            onDismissRequest = { showStartDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let { viewModel.setStartDate(it) }
+                    showStartDatePicker = false
+                }) { Text("Pilih") }
             },
-            confirmButton = {}
-        )
+            dismissButton = {
+                TextButton(onClick = { showStartDatePicker = false }) { Text("Batal") }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
+
+    if (showEndDatePicker) {
+        val datePickerState = rememberDatePickerState(initialSelectedDateMillis = endDate)
+        DatePickerDialog(
+            onDismissRequest = { showEndDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let { viewModel.setEndDate(it) }
+                    showEndDatePicker = false
+                }) { Text("Pilih") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEndDatePicker = false }) { Text("Batal") }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
     }
 }
 
