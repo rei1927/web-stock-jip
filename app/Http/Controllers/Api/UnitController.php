@@ -28,14 +28,14 @@ class UnitController extends Controller
             $mappedStatus = 'Tersedia';
             if ($unit->status === 'hold') $mappedStatus = 'Hold';
             elseif ($unit->status === 'request_booking') $mappedStatus = 'Pending Sold';
-            elseif ($unit->status === 'booked' || $unit->status === 'sold') $mappedStatus = 'Terjual';
+            elseif ($unit->status === 'sold') $mappedStatus = 'Terjual';
 
             return [
                 'clusterName' => $unit->cluster ? $unit->cluster->name : 'Unknown',
                 'block' => $unit->block,
                 'typeName' => $details['type'] ?? $unit->name,
                 'price' => (float) $unit->selling_price,
-                'isSold' => in_array($unit->status, ['booked', 'sold']),
+                'isSold' => in_array($unit->status, ['sold']),
                 'buildingArea' => (int) ($details['buildingArea'] ?? 0),
                 'landArea' => (int) ($details['landArea'] ?? 0),
                 'bedrooms' => (int) ($details['bedrooms'] ?? 0),

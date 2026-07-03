@@ -39,7 +39,7 @@
                   <select id="bulk_action_select" class="form-select form-select-sm" style="width: auto;">
                     <option value="">-- Bulk Action --</option>
                     <option value="available">Set as Available</option>
-                    <option value="booked">Set as Booked</option>
+                    <option value="hold">Set as Hold</option>
                     <option value="sold">Set as Sold</option>
                     <option value="delete">Delete Selected</option>
                   </select>

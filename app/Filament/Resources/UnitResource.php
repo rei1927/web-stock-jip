@@ -41,7 +41,6 @@ class UnitResource extends Resource
                         'available' => 'Available',
                         'hold' => 'Hold',
                         'request_booking' => 'Request Booking',
-                        'booked' => 'Booked',
                         'sold' => 'Sold',
                     ])
                     ->default('available')
