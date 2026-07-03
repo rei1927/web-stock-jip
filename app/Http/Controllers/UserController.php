@@ -7,16 +7,21 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 
-class UserController extends Controller
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
+
+class UserController extends Controller implements HasMiddleware
 {
-    public function __construct()
+    public static function middleware(): array
     {
-        $this->middleware(function ($request, $next) {
-            if (Auth::user()->role !== 'super_admin') {
-                abort(403, 'Unauthorized action. Only Super Admin can manage users.');
-            }
-            return $next($request);
-        });
+        return [
+            new Middleware(function ($request, $next) {
+                if (Auth::user()->role !== 'super_admin') {
+                    abort(403, 'Unauthorized action. Only Super Admin can manage users.');
+                }
+                return $next($request);
+            }),
+        ];
     }
 
     public function index(Request $request)
