@@ -107,7 +107,7 @@
                   <label>Status</label>
                   <select class="form-control" name="status" required>
                     <option value="available" {{ old('status', $unit->status ?? '') == 'available' ? 'selected' : '' }}>Available</option>
-                    <option value="reserved" {{ old('status', $unit->status ?? '') == 'reserved' ? 'selected' : '' }}>Reserved</option>
+                    <option value="booked" {{ old('status', $unit->status ?? '') == 'booked' ? 'selected' : '' }}>Booked</option>
                     <option value="sold" {{ old('status', $unit->status ?? '') == 'sold' ? 'selected' : '' }}>Sold</option>
                   </select>
                   @error('status')

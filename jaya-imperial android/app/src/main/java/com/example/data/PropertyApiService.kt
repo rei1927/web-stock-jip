@@ -101,7 +101,7 @@ interface PropertyApiService {
     companion object {
         // PENTING: Jika menggunakan HP Fisik, ganti '10.0.2.2' dengan alamat IP Laptop Anda (contoh: 192.168.1.5)
         // Gunakan '10.0.2.2' jika hanya menggunakan Emulator.
-        private const val BASE_URL = "http://10.0.2.2:8000/"
+        private const val BASE_URL = "https://webstock.joyvite.id/"
 
         fun create(): PropertyApiService {
             val moshi = Moshi.Builder()

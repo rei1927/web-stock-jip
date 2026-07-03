@@ -49,7 +49,7 @@ class UnitController extends Controller
             'name' => 'required|string|max:255',
             'block' => 'required|string|max:255',
             'selling_price' => 'required|numeric',
-            'status' => 'required|in:available,sold,reserved',
+            'status' => 'required|in:available,sold,booked',
             'type' => 'nullable|string|max:255',
             'landArea' => 'nullable|numeric',
             'buildingArea' => 'nullable|numeric',
@@ -101,7 +101,7 @@ class UnitController extends Controller
             'name' => 'required|string|max:255',
             'block' => 'required|string|max:255',
             'selling_price' => 'required|numeric',
-            'status' => 'required|in:available,sold,reserved',
+            'status' => 'required|in:available,sold,booked',
             'type' => 'nullable|string|max:255',
             'landArea' => 'nullable|numeric',
             'buildingArea' => 'nullable|numeric',
@@ -188,10 +188,10 @@ class UnitController extends Controller
             return redirect()->route('units.index')->with('success', count($ids) . ' units deleted successfully.');
         } 
         
-        if (in_array($action, ['available', 'reserved', 'sold', 'hold', 'request_booking'])) {
+        if (in_array($action, ['available', 'booked', 'sold', 'hold', 'request_booking'])) {
             Unit::whereIn('id', $ids)->update(['status' => $action]);
 
-            if (in_array($action, ['hold', 'sold', 'reserved'])) {
+            if (in_array($action, ['hold', 'sold', 'booked'])) {
                 $statusName = ucfirst($action);
                 $count = count($ids);
                 FCMService::sendToAll(

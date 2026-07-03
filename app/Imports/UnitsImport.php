@@ -50,7 +50,7 @@ class UnitsImport implements ToCollection, WithStartRow
             $sellingPrice = isset($row[12]) ? (float) preg_replace('/[^0-9]/', '', $row[12]) : 0;
             $status = isset($row[13]) ? strtolower(trim($row[13])) : 'available';
 
-            if (!in_array($status, ['available', 'reserved', 'sold', 'hold', 'request_booking'])) {
+            if (!in_array($status, ['available', 'booked', 'sold', 'hold', 'request_booking'])) {
                 $status = 'available';
             }
 
