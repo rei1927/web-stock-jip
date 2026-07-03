@@ -49,6 +49,8 @@ class TransactionResource extends Resource
                         'rejected' => 'Rejected',
                     ])
                     ->required(),
+                Forms\Components\KeyValue::make('details')
+                    ->columnSpanFull(),
                 Forms\Components\Textarea::make('notes')
                     ->columnSpanFull(),
             ]);

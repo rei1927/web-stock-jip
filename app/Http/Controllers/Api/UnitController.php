@@ -144,6 +144,9 @@ class UnitController extends Controller
                     'phone' => $request->noTelpSeluler ?? '-',
                     'email' => $request->email,
                     'address' => $request->alamatKtp ?? '-',
+                    'alamat_surat' => $request->alamatSurat,
+                    'no_telepon_rumah' => $request->noTeleponRumah,
+                    'no_kk' => $request->noKk,
                 ]
             );
 

@@ -769,61 +769,121 @@ fun CameraCaptureView(
     val imageCapture = remember { ImageCapture.Builder().setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY).build() }
     val cameraSelector = remember { CameraSelector.DEFAULT_FRONT_CAMERA }
 
-    LaunchedEffect(Unit) {
-        val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
-        cameraProviderFuture.addListener({
-            val cameraProvider = cameraProviderFuture.get()
-            val preview = Preview.Builder().build().also {
-                it.setSurfaceProvider(previewView.surfaceProvider)
-            }
+    var capturedUri by remember { mutableStateOf<Uri?>(null) }
 
-            try {
-                cameraProvider.unbindAll()
-                cameraProvider.bindToLifecycle(lifecycleOwner, cameraSelector, preview, imageCapture)
-            } catch (e: Exception) {
-                Log.e("CameraX", "Binding failed", e)
-            }
-        }, ContextCompat.getMainExecutor(context))
-    }
+    if (capturedUri == null) {
+        LaunchedEffect(Unit) {
+            val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
+            cameraProviderFuture.addListener({
+                val cameraProvider = cameraProviderFuture.get()
+                val preview = Preview.Builder().build().also {
+                    it.setSurfaceProvider(previewView.surfaceProvider)
+                }
 
-    Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
-        AndroidView(factory = { previewView }, modifier = Modifier.fillMaxSize())
-
-        IconButton(
-            onClick = onClose,
-            modifier = Modifier.align(Alignment.TopStart).padding(16.dp)
-        ) {
-            Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White, modifier = Modifier.size(32.dp))
+                try {
+                    cameraProvider.unbindAll()
+                    cameraProvider.bindToLifecycle(lifecycleOwner, cameraSelector, preview, imageCapture)
+                } catch (e: Exception) {
+                    Log.e("CameraX", "Binding failed", e)
+                }
+            }, ContextCompat.getMainExecutor(context))
         }
 
-        Column(
-            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 48.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text("Posisikan wajah Anda di tengah layar", color = Color.White, fontSize = 14.sp, modifier = Modifier.padding(bottom = 16.dp))
+        Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+            AndroidView(factory = { previewView }, modifier = Modifier.fillMaxSize())
 
-            Button(
-                onClick = {
-                    val file = File(context.cacheDir, "attendance_${System.currentTimeMillis()}.jpg")
-                    val outputOptions = ImageCapture.OutputFileOptions.Builder(file).build()
-                    imageCapture.takePicture(
-                        outputOptions,
-                        ContextCompat.getMainExecutor(context),
-                        object : ImageCapture.OnImageSavedCallback {
-                            override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
-                                onImageCaptured(Uri.fromFile(file))
-                            }
-                            override fun onError(exception: ImageCaptureException) {
-                                Log.e("CameraX", "Capture failed", exception)
-                            }
-                        }
-                    )
-                },
-                modifier = Modifier.size(80.dp),
-                shape = CircleShape,
-                colors = ButtonDefaults.buttonColors(containerColor = Color.White),
-                border = BorderStroke(4.dp, Color.LightGray)
+            IconButton(
+                onClick = onClose,
+                modifier = Modifier.align(Alignment.TopStart).padding(16.dp)
             ) {
+                Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White, modifier = Modifier.size(32.dp))
+            }
+
+            Column(
+                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 48.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text("Posisikan wajah Anda di tengah layar", color = Color.White, fontSize = 14.sp, modifier = Modifier.padding(bottom = 16.dp))
+
+                Button(
+                    onClick = {
+                        val file = File(context.cacheDir, "attendance_${System.currentTimeMillis()}.jpg")
+                        val outputOptions = ImageCapture.OutputFileOptions.Builder(file).build()
+                        imageCapture.takePicture(
+                            outputOptions,
+                            ContextCompat.getMainExecutor(context),
+                            object : ImageCapture.OnImageSavedCallback {
+                                override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
+                                    capturedUri = Uri.fromFile(file)
+                                }
+                                override fun onError(exception: ImageCaptureException) {
+                                    Log.e("CameraX", "Capture failed", exception)
+                                }
+                            }
+                        )
+                    },
+                    modifier = Modifier.size(80.dp),
+                    shape = CircleShape,
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.White),
+                    border = BorderStroke(4.dp, Color.LightGray)
+                ) {
+                }
+            }
+        }
+    } else {
+        // --- PHOTO PREVIEW & CONFIRMATION ---
+        Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+            val bitmap = remember(capturedUri) { BitmapFactory.decodeFile(capturedUri!!.path) }
+            if (bitmap != null) {
+                Image(
+                    bitmap = bitmap.asImageBitmap(),
+                    contentDescription = "Preview",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            }
+
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .background(Color.Black.copy(alpha = 0.7f))
+                    .fillMaxWidth()
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "Gunakan foto ini untuk absensi?",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp,
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = { capturedUri = null },
+                        modifier = Modifier.weight(1f).height(48.dp),
+                        border = BorderStroke(1.dp, Color.White),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
+                    ) {
+                        Text("ULANGI", fontWeight = FontWeight.Bold)
+                    }
+
+                    Button(
+                        onClick = { onImageCaptured(capturedUri!!) },
+                        modifier = Modifier.weight(1f).height(48.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = TersediaGreen),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("GUNAKAN FOTO", fontWeight = FontWeight.Bold, color = Color.White)
+                    }
+                }
             }
         }
     }

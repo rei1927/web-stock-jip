@@ -19,50 +19,83 @@ class TransactionController extends Controller
     public function create()
     {
         $units = Unit::all();
-        $customers = Customer::all();
         $admins = User::all();
-        return view('transaction-form', compact('units', 'customers', 'admins'));
+        return view('transaction-form', compact('units', 'admins'));
     }
 
     public function store(Request $request)
     {
         $request->validate([
             'unit_id' => 'required|exists:units,id',
-            'customer_id' => 'required|exists:customers,id',
             'admin_id' => 'required|exists:users,id',
-            'status' => 'required|in:pending,completed,canceled',
-            'notes' => 'nullable|string',
+            'status' => 'required',
+            'nik' => 'required|string',
+            'name' => 'required|string',
         ]);
 
-        Transaction::create($request->all());
+        $customer = Customer::updateOrCreate(
+            ['nik' => $request->nik],
+            $request->only(['name', 'npwp', 'phone', 'email', 'address', 'alamat_surat', 'no_telepon_rumah', 'no_kk'])
+        );
+
+        $details = $request->except([
+            '_token', '_method', 'unit_id', 'admin_id', 'status', 'notes', 
+            'nik', 'name', 'npwp', 'phone', 'email', 'address', 'alamat_surat', 'no_telepon_rumah', 'no_kk'
+        ]);
+
+        Transaction::create([
+            'unit_id' => $request->unit_id,
+            'customer_id' => $customer->id,
+            'admin_id' => $request->admin_id,
+            'sales_id' => auth()->id(),
+            'status' => $request->status,
+            'notes' => $request->notes,
+            'details' => $details,
+        ]);
 
         return redirect()->route('transactions.index')->with('success', 'Transaction created successfully.');
     }
 
     public function show(Transaction $transaction)
     {
-        //
+        return view('transaction-show', compact('transaction'));
     }
 
     public function edit(Transaction $transaction)
     {
         $units = Unit::all();
-        $customers = Customer::all();
         $admins = User::all();
-        return view('transaction-form', compact('transaction', 'units', 'customers', 'admins'));
+        return view('transaction-form', compact('transaction', 'units', 'admins'));
     }
 
     public function update(Request $request, Transaction $transaction)
     {
         $request->validate([
             'unit_id' => 'required|exists:units,id',
-            'customer_id' => 'required|exists:customers,id',
             'admin_id' => 'required|exists:users,id',
-            'status' => 'required|in:pending,completed,canceled',
-            'notes' => 'nullable|string',
+            'status' => 'required',
+            'nik' => 'required|string',
+            'name' => 'required|string',
         ]);
 
-        $transaction->update($request->all());
+        $customer = Customer::updateOrCreate(
+            ['nik' => $request->nik],
+            $request->only(['name', 'npwp', 'phone', 'email', 'address', 'alamat_surat', 'no_telepon_rumah', 'no_kk'])
+        );
+
+        $details = $request->except([
+            '_token', '_method', 'unit_id', 'admin_id', 'status', 'notes', 
+            'nik', 'name', 'npwp', 'phone', 'email', 'address', 'alamat_surat', 'no_telepon_rumah', 'no_kk'
+        ]);
+
+        $transaction->update([
+            'unit_id' => $request->unit_id,
+            'customer_id' => $customer->id,
+            'admin_id' => $request->admin_id,
+            'status' => $request->status,
+            'notes' => $request->notes,
+            'details' => $details,
+        ]);
 
         return redirect()->route('transactions.index')->with('success', 'Transaction updated successfully.');
     }
