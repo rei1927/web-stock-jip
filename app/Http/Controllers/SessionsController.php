@@ -22,6 +22,12 @@ class SessionsController extends Controller
 
         if(Auth::attempt($attributes))
         {
+            $role = Auth::user()->role;
+            if (!in_array($role, ['super_admin', 'admin'])) {
+                Auth::logout();
+                return back()->withErrors(['email'=>'Anda tidak memiliki akses ke Web App.']);
+            }
+
             session()->regenerate();
             return redirect('dashboard')->with(['success'=>'You are logged in.']);
         }

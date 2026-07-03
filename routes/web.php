@@ -27,4 +27,4 @@ Route::post('units/bulk-action', [UnitController::class, 'bulkAction'])->name('u
 Route::resource('units', UnitController::class)->middleware('auth');
 Route::resource('customers', CustomerController::class)->middleware('auth');
 Route::resource('transactions', TransactionController::class)->middleware('auth');
-Route::get('users', [App\Http\Controllers\UserController::class, 'index'])->name('users.index')->middleware('auth');
+Route::resource('users', App\Http\Controllers\UserController::class)->middleware('auth');

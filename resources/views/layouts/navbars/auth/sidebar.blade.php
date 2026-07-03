@@ -114,6 +114,7 @@
           <span class="nav-link-text ms-1">Broadcast</span>
         </a>
       </li>
+      @if(auth()->user()->role === 'super_admin')
       <li class="nav-item">
         <a class="nav-link {{ (Request::is('users') ? 'active' : '') }}" href="{{ url('users') }}">
           <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
@@ -122,6 +123,7 @@
           <span class="nav-link-text ms-1">Users</span>
         </a>
       </li>
+      @endif
       <li class="nav-item">
         <form role="form" method="post" action="{{ route('logout') }}" id="logout-form">
             @csrf

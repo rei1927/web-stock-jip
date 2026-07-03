@@ -38,10 +38,7 @@ abstract class PropertyDatabase : RoomDatabase() {
 
         private suspend fun seedRequiredUsers(dao: PropertyDao) {
             val seedUsers = listOf(
-                User(username = "siska", name = "Siska (Sales)", role = "Sales", pin = "123456", managerName = "rudi"),
-                User(username = "rudi", name = "Rudi (Sales Manager)", role = "Sales Manager", pin = "123456"),
-                User(username = "admin", name = "Admin", role = "Admin", pin = "123456"),
-                User(username = "reza", name = "Reza (Super Admin)", role = "Super Admin", pin = "123456")
+                User(username = "superadmin@jip.com", name = "Super Admin", role = "Super Admin", pin = "1234")
             )
 
             for (user in seedUsers) {

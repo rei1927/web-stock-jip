@@ -256,7 +256,7 @@ fun DashboardScreen(
                             )
                         } else {
                             Text(
-                                text = "OFFLINE MANAGEMENT SYSTEM",
+                                text = "SALES MANAGEMENT SYSTEM",
                                 fontSize = 9.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = ContentSecondary,
@@ -548,22 +548,6 @@ fun DashboardScreen(
                             onClick = onNavigateToUserManagement,
                             modifier = Modifier.testTag("menu_user_management")
                         )
-                    }
-                }
-            }
-
-            // Informational Notice Board
-            Card(
-                colors = CardDefaults.cardColors(containerColor = NavyDark.copy(alpha = 0.03f)),
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(bottom = 32.dp)
-            ) {
-                Row(modifier = Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(imageVector = Icons.Default.Info, contentDescription = null, tint = NavyPrimary, modifier = Modifier.size(24.dp))
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column {
-                        Text(text = "Integrasi Sinc Proyek-Web Ready", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = NavyDark)
-                        Text(text = "Seluruh manipulasi data lokal (DB SQLite) siap dihubungkan dengan API web panel internal CRUD jika infrastruktur web hosting telah daring.", fontSize = 11.sp, color = Color.Gray, lineHeight = 15.sp)
                     }
                 }
             }

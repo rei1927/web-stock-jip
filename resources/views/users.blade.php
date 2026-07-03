@@ -9,6 +9,7 @@
             <div class="card-header pb-0">
               <div class="d-flex justify-content-between align-items-center mb-3">
                 <h6>Users Data</h6>
+                <a href="{{ route('users.create') }}" class="btn btn-sm bg-gradient-info mb-0">+ Add New User</a>
               </div>
               <div class="d-flex justify-content-between align-items-center mt-3">
                 <form method="GET" action="{{ route('users.index') }}" class="d-flex mb-0 align-items-center gap-2">
@@ -34,6 +35,7 @@
                       <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Name</th>
                       <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2 border-start">Role</th>
                       <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 border-start">Registered Date</th>
+                      <th class="text-secondary opacity-7 border-start"></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -53,10 +55,24 @@
                       <td class="align-middle text-center border-start">
                         <span class="text-secondary text-xs font-weight-bold">{{ $user->created_at ? $user->created_at->format('d/m/Y') : '-' }}</span>
                       </td>
+                      <td class="align-middle border-start text-center">
+                        <a href="{{ route('users.edit', $user->id) }}" class="text-secondary font-weight-bold text-xs me-3" data-toggle="tooltip" data-original-title="Edit user">
+                          Edit
+                        </a>
+                        @if($user->id !== auth()->id())
+                        <form action="{{ route('users.destroy', $user->id) }}" method="POST" class="d-inline">
+                          @csrf
+                          @method('DELETE')
+                          <button type="submit" class="text-danger font-weight-bold text-xs bg-transparent border-0 p-0" onclick="return confirm('Are you sure you want to delete this user?')" data-toggle="tooltip" data-original-title="Delete user">
+                            Delete
+                          </button>
+                        </form>
+                        @endif
+                      </td>
                     </tr>
                     @empty
                     <tr>
-                      <td colspan="3" class="text-center py-4">
+                      <td colspan="4" class="text-center py-4">
                         <p class="text-xs font-weight-bold mb-0">No users found.</p>
                       </td>
                     </tr>
