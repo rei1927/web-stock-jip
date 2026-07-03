@@ -14,6 +14,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Leaderboard
 import androidx.compose.material.icons.filled.People
@@ -37,6 +38,9 @@ import com.example.data.SalesLog
 import com.example.data.User
 import com.example.ui.theme.*
 import java.text.NumberFormat
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -47,38 +51,39 @@ fun OmzetReportScreen(
 ) {
     val currentUser by viewModel.currentUser.collectAsState()
     val rawSalesLogs by viewModel.salesLogs.collectAsState()
-    val filteredSalesLogs by viewModel.filteredSalesLogs.collectAsState()
+    val startDate by viewModel.startDate.collectAsState()
+    val endDate by viewModel.endDate.collectAsState()
     val allUsers by viewModel.allUsers.collectAsState()
-    val selectedYear by viewModel.selectedYear.collectAsState()
 
-    var showYearSelector by remember { mutableStateOf(false) }
+    var showStartDatePicker by remember { mutableStateOf(false) }
+    var showEndDatePicker by remember { mutableStateOf(false) }
+
+    val dateFormatter = remember { SimpleDateFormat("dd MMM yyyy", Locale("id", "ID")) }
 
     val role = currentUser?.role ?: "Sales"
-    val username = currentUser?.username ?: "siska"
+    val username = currentUser?.username ?: ""
 
     // Manager / Admin sub-filtering state
     var selectedSalespersonFilter by remember { mutableStateOf<String?> (null) }
     var selectedManagerFilter by remember { mutableStateOf<String?> (null) }
 
     // Derive reporting logs based on selections and authorizations
-    val reportingLogs = remember(rawSalesLogs, currentUser, selectedSalespersonFilter, selectedManagerFilter, selectedYear) {
-        var logs = rawSalesLogs.filter { it.year == selectedYear }
+    val reportingLogs = remember(rawSalesLogs, currentUser, selectedSalespersonFilter, selectedManagerFilter, startDate, endDate) {
+        var logs = rawSalesLogs.filter { it.timestamp in startDate..endDate }
 
         when (role) {
             "Sales" -> {
                 logs = logs.filter { it.soldBy == username }
             }
             "Sales Manager" -> {
-                // Default shows whole team (sales logs where manager is current user OR sold by current user)
                 val teamMembers = allUsers.filter { it.managerName == username }.map { it.username }
                 logs = logs.filter { it.managerName == username || teamMembers.contains(it.soldBy) || it.soldBy == username }
 
-                // If specific team member is selected
                 if (selectedSalespersonFilter != null) {
                     logs = logs.filter { it.soldBy == selectedSalespersonFilter }
                 }
             }
-            else -> { // Admin & Super Admin can examine everything
+            else -> {
                 if (selectedManagerFilter != null) {
                     logs = logs.filter { it.managerName == selectedManagerFilter }
                 }
@@ -94,8 +99,10 @@ fun OmzetReportScreen(
     val chartMonthlySales = remember(reportingLogs) {
         val list = MutableList(12) { 0.0 }
         reportingLogs.forEach { log ->
-            if (log.monthIndex in 1..12) {
-                list[log.monthIndex - 1] += log.salePrice
+            val cal = Calendar.getInstance().apply { timeInMillis = log.timestamp }
+            val month = cal.get(Calendar.MONTH)
+            if (month in 0..11) {
+                list[month] += log.salePrice
             }
         }
         list.toList()
@@ -138,52 +145,59 @@ fun OmzetReportScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp)
         ) {
-            // Profile & Title Row
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 12.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column {
-                    Text(
-                        text = when (role) {
-                            "Sales" -> "Analisis Omzet Pribadi"
-                            "Sales Manager" -> "Analisis Omzet Tim"
-                            else -> "Analisis Omzet Developer"
-                        },
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Black,
-                        color = NavyDark
-                    )
-                    Text(
-                        text = "Periode Operasional Tahun $selectedYear",
-                        fontSize = 11.sp,
-                        color = Color.Gray
-                    )
-                }
+            // Title & Info
+            Text(
+                text = when (role) {
+                    "Sales" -> "Analisis Omzet Pribadi"
+                    "Sales Manager" -> "Analisis Omzet Tim"
+                    else -> "Analisis Omzet Developer"
+                },
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Black,
+                color = NavyDark
+            )
+            Text(
+                text = "Periode: ${dateFormatter.format(Date(startDate))} - ${dateFormatter.format(Date(endDate))}",
+                fontSize = 11.sp,
+                color = Color.Gray,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
 
-                Box(
-                    modifier = Modifier
-                        .background(NavyPrimary.copy(alpha = 0.1f), shape = RoundedCornerShape(8.dp))
-                        .clickable { showYearSelector = true }
-                        .padding(horizontal = 12.dp, vertical = 6.dp)
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.CalendarMonth,
-                            contentDescription = null,
-                            tint = NavyPrimary,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "Tahun $selectedYear",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = NavyPrimary
-                        )
+            // --- DATE RANGE SELECTOR ---
+            Card(
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                border = BorderStroke(1.dp, BorderLight)
+            ) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                    Text("PILIH RENTANG PERIODE", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = NavyPrimary, letterSpacing = 0.5.sp)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .background(SoftBackground, RoundedCornerShape(8.dp))
+                                .clickable { showStartDatePicker = true }
+                                .padding(12.dp)
+                        ) {
+                            Column {
+                                Text("Mulai", fontSize = 9.sp, color = Color.Gray)
+                                Text(dateFormatter.format(Date(startDate)), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = NavyDark)
+                            }
+                        }
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .background(SoftBackground, RoundedCornerShape(8.dp))
+                                .clickable { showEndDatePicker = true }
+                                .padding(12.dp)
+                        ) {
+                            Column {
+                                Text("Sampai", fontSize = 9.sp, color = Color.Gray)
+                                Text(dateFormatter.format(Date(endDate)), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = NavyDark)
+                            }
+                        }
                     }
                 }
             }

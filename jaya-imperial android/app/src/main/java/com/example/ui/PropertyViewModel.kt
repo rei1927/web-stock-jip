@@ -10,6 +10,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import java.util.Calendar
 import kotlin.math.pow
 
 class PropertyViewModel(private val repository: PropertyRepository) : ViewModel() {
@@ -36,8 +37,17 @@ class PropertyViewModel(private val repository: PropertyRepository) : ViewModel(
     private val _clusterFilter = MutableStateFlow<String?>(null)
     val clusterFilter: StateFlow<String?> = _clusterFilter.asStateFlow()
 
-    private val _selectedYear = MutableStateFlow(2026)
-    val selectedYear: StateFlow<Int> = _selectedYear.asStateFlow()
+    // Period filtering (Start Date & End Date)
+    private val _startDate = MutableStateFlow(Calendar.getInstance().apply {
+        set(Calendar.DAY_OF_YEAR, 1)
+        set(Calendar.HOUR_OF_DAY, 0)
+        set(Calendar.MINUTE, 0)
+        set(Calendar.SECOND, 0)
+    }.timeInMillis)
+    val startDate: StateFlow<Long> = _startDate.asStateFlow()
+
+    private val _endDate = MutableStateFlow(System.currentTimeMillis())
+    val endDate: StateFlow<Long> = _endDate.asStateFlow()
 
     private val _propertyPrice = MutableStateFlow(1500000000.0)
     val propertyPrice: StateFlow<Double> = _propertyPrice.asStateFlow()
@@ -108,25 +118,37 @@ class PropertyViewModel(private val repository: PropertyRepository) : ViewModel(
     val salesLogs: StateFlow<List<SalesLog>> = repository.allSalesLogs
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val filteredSalesLogs: StateFlow<List<SalesLog>> = combine(repository.allSalesLogs, currentUser) { logs, user ->
-        if (user == null) emptyList() else when (user.role) {
-            "Sales" -> logs.filter { it.soldBy == user.username }
-            "Sales Manager" -> logs.filter { it.managerName == user.username || it.soldBy == user.username }
-            else -> logs
+    val filteredSalesLogs: StateFlow<List<SalesLog>> = combine(repository.allSalesLogs, currentUser, _startDate, _endDate) { logs, user, start, end ->
+        if (user == null) emptyList() else {
+            val roleLogs = when (user.role) {
+                "Sales" -> logs.filter { it.soldBy == user.username }
+                "Sales Manager" -> logs.filter { it.managerName == user.username || it.soldBy == user.username }
+                else -> logs
+            }
+            roleLogs.filter { it.timestamp in start..end }
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val monthlySalesData: StateFlow<List<Double>> = combine(filteredSalesLogs, _selectedYear) { logs, year ->
+    val totalTurnover: StateFlow<Double> = filteredSalesLogs.map { logs ->
+        logs.sumOf { it.salePrice }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
+
+    val soldUnitsCount: StateFlow<Int> = filteredSalesLogs.map { it.size }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+
+    val averageUnitPrice: StateFlow<Double> = combine(totalTurnover, soldUnitsCount) { turnover, count ->
+        if (count > 0) turnover / count else 0.0
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
+
+    val monthlySalesData: StateFlow<List<Double>> = filteredSalesLogs.map { logs ->
         val monthlySales = MutableList(12) { 0.0 }
-        logs.filter { it.year == year }.forEach { log ->
-            if (log.monthIndex in 1..12) monthlySales[log.monthIndex - 1] += log.salePrice
+        logs.forEach { log ->
+            val cal = Calendar.getInstance().apply { timeInMillis = log.timestamp }
+            val month = cal.get(Calendar.MONTH)
+            if (month in 0..11) monthlySales[month] += log.salePrice
         }
         monthlySales.toList()
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), List(12) { 0.0 })
-
-    val totalTurnover: StateFlow<Double> = monthlySalesData.map { it.sum() }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
-    val soldUnitsCount: StateFlow<Int> = combine(filteredSalesLogs, _selectedYear) { logs, year -> logs.filter { it.year == year }.size }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
-    val averageUnitPrice: StateFlow<Double> = combine(totalTurnover, soldUnitsCount) { turnover, count -> if (count > 0) turnover / count else 0.0 }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
 
     val monthlyInstallment: StateFlow<Double> = combine(_propertyPrice, _dpPercent, _interestRate, _termYears) { price, dp, interest, years ->
         val loan = price - (price * (dp / 100.0))
@@ -390,7 +412,6 @@ class PropertyViewModel(private val repository: PropertyRepository) : ViewModel(
         viewModelScope.launch {
             val user = _currentUser.value ?: return@launch
             repository.insertAttendance(AttendanceEntity(username = user.username, name = user.name, timestamp = System.currentTimeMillis(), latitude = lat, longitude = lon, photoUri = photo, address = addr, type = type))
-            repository.insertNotification(NotificationEntity(title = "Absen $type Berhasil", message = "Anda telah berhasil melakukan absen $type.", timestamp = System.currentTimeMillis()))
         }
     }
     fun submitGimmickRequest(unit: HousingUnit, salesperson: User, details: String) {
@@ -427,7 +448,8 @@ class PropertyViewModel(private val repository: PropertyRepository) : ViewModel(
     fun setSearchQuery(q: String) { _searchQuery.value = q }
     fun setStatusFilter(f: FilterStatus) { _statusFilter.value = f }
     fun setClusterFilter(c: String?) { _clusterFilter.value = c }
-    fun setSelectedYear(y: Int) { _selectedYear.value = y }
+    fun setStartDate(s: Long) { _startDate.value = s }
+    fun setEndDate(e: Long) { _endDate.value = e }
     fun setPropertyPrice(p: Double) { _propertyPrice.value = p }
     fun setDpPercent(d: Double) { _dpPercent.value = d }
     fun setInterestRate(i: Double) { _interestRate.value = i }

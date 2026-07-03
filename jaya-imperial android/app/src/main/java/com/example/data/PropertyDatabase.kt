@@ -9,7 +9,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-@Database(entities = [HousingUnit::class, SalesLog::class, User::class, SalesTeam::class, SoldProposal::class, NotificationEntity::class, GimmickRequest::class, AttendanceEntity::class], version = 12, exportSchema = false)
+@Database(entities = [HousingUnit::class, SalesLog::class, User::class, SalesTeam::class, SoldProposal::class, NotificationEntity::class, GimmickRequest::class, AttendanceEntity::class], version = 13, exportSchema = false)
 abstract class PropertyDatabase : RoomDatabase() {
     abstract fun propertyDao(): PropertyDao
 

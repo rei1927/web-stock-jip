@@ -26,5 +26,6 @@ Route::post('units/import', [UnitController::class, 'import'])->name('units.impo
 Route::post('units/bulk-action', [UnitController::class, 'bulkAction'])->name('units.bulkAction')->middleware('auth');
 Route::resource('units', UnitController::class)->middleware('auth');
 Route::resource('customers', CustomerController::class)->middleware('auth');
+Route::post('transactions/bulk-action', [TransactionController::class, 'bulkAction'])->name('transactions.bulkAction')->middleware('auth');
 Route::resource('transactions', TransactionController::class)->middleware('auth');
 Route::resource('users', App\Http\Controllers\UserController::class)->middleware('auth');
