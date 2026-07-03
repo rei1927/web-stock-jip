@@ -16,20 +16,6 @@ services:
       - DB_DATABASE=/var/www/html/database/database.sqlite
       # Ensure you configure your other secrets inside Portainer Environment Variables!
 
-  minio:
-    image: minio/minio:latest
-    container_name: web-stock-jip-minio
-    restart: unless-stopped
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-    environment:
-      - MINIO_ROOT_USER=admin
-      - MINIO_ROOT_PASSWORD=password
-    volumes:
-      - minio_data:/data
-    command: server /data --console-address ":9001"
-
 volumes:
   sqlite_data:
-  minio_data:
+
