@@ -96,7 +96,7 @@
         </a>
       </li>
       <li class="nav-item mt-3">
-        <h6 class="ps-4 ms-2 text-uppercase text-xs font-weight-bolder opacity-6">Transactions</h6>
+        <h6 class="ps-4 ms-2 text-uppercase text-xs font-weight-bolder opacity-6">Utility</h6>
       </li>
       <li class="nav-item">
         <a class="nav-link {{ (Request::is('transactions') ? 'active' : '') }}" href="{{ url('transactions') }}">
