@@ -49,6 +49,11 @@ class TransactionResource extends Resource
                         'rejected' => 'Rejected',
                     ])
                     ->required(),
+                Forms\Components\TextInput::make('details.utj_photo_url')
+                    ->label('URL Foto UTJ')
+                    ->url()
+                    ->disabled()
+                    ->columnSpanFull(),
                 Forms\Components\KeyValue::make('details')
                     ->columnSpanFull(),
                 Forms\Components\Textarea::make('notes')
@@ -74,6 +79,10 @@ class TransactionResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('status')
                     ->searchable(),
+                Tables\Columns\ImageColumn::make('details.utj_photo_url')
+                    ->label('Foto UTJ')
+                    ->circular()
+                    ->defaultImageUrl('https://ui-avatars.com/api/?name=No+Photo&color=7F9CF5&background=EBF4FF'),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
