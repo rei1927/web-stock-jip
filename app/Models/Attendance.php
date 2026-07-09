@@ -14,6 +14,10 @@ class Attendance extends Model
         'type',
         'location',
         'photo_url',
+        'lat',
+        'long',
+        'address',
+        'timestamp',
     ];
 
     public function user()

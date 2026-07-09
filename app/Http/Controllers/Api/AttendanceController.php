@@ -11,16 +11,47 @@ class AttendanceController extends Controller
     public function submit(Request $request)
     {
         $request->validate([
-            'type' => 'required|string',
-            'location' => 'nullable|string',
-            'photo_url' => 'nullable|string',
+            'type' => 'required|string|in:Masuk,Keluar',
+            'lat' => 'nullable|string',
+            'long' => 'nullable|string',
+            'address' => 'nullable|string',
+            'photo' => 'nullable|string',
+            'timestamp' => 'nullable|date',
         ]);
 
+        $user = $request->user();
+
+        // Cek status terakhir hari ini
+        $lastAttendance = Attendance::where('user_id', $user->id)
+            ->whereDate('created_at', now()->toDateString())
+            ->orderBy('created_at', 'desc')
+            ->first();
+
+        $lastType = $lastAttendance ? $lastAttendance->type : null;
+
+        // Aturan Stateful (Jika Masuk, harus Keluar)
+        if ($request->type === 'Masuk' && $lastType === 'Masuk') {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Anda sudah melakukan Absen Masuk hari ini. Silakan Absen Keluar.'
+            ], 400);
+        }
+
+        if ($request->type === 'Keluar' && $lastType !== 'Masuk') {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Anda harus Absen Masuk terlebih dahulu sebelum Absen Keluar.'
+            ], 400);
+        }
+
         $attendance = Attendance::create([
-            'user_id' => $request->user()->id,
+            'user_id' => $user->id,
             'type' => $request->type,
-            'location' => $request->location,
-            'photo_url' => $request->photo_url,
+            'lat' => $request->lat,
+            'long' => $request->long,
+            'address' => $request->address,
+            'photo_url' => $request->photo ?? $request->photo_url,
+            'timestamp' => $request->timestamp ?? now(),
         ]);
 
         return response()->json([
@@ -28,6 +59,25 @@ class AttendanceController extends Controller
             'message' => 'Attendance submitted successfully',
             'data' => $attendance
         ], 201);
+    }
+
+    public function status(Request $request, $email = null)
+    {
+        // Get user from token if email is not provided or if we prefer token security
+        $user = $request->user();
+        
+        // Cek status terakhir hari ini
+        $lastAttendance = Attendance::where('user_id', $user->id)
+            ->whereDate('created_at', now()->toDateString())
+            ->orderBy('created_at', 'desc')
+            ->first();
+
+        $status = $lastAttendance ? $lastAttendance->type : 'Belum Absen';
+
+        return response()->json([
+            'status' => 'success',
+            'last_status' => $status
+        ]);
     }
 
     public function all(Request $request)

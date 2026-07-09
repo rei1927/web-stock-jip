@@ -41,6 +41,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Attendance API
     Route::post('/attendance/upload-photo', [\App\Http\Controllers\Api\UploadController::class, 'uploadImage']);
-    Route::post('/attendance/submit', [\App\Http\Controllers\Api\AttendanceController::class, 'submit']);
+    Route::post('/attendance', [\App\Http\Controllers\Api\AttendanceController::class, 'submit']);
+    Route::get('/attendance/status', [\App\Http\Controllers\Api\AttendanceController::class, 'status']);
+    Route::get('/attendance/status/{email}', [\App\Http\Controllers\Api\AttendanceController::class, 'status']);
     Route::get('/attendance/all', [\App\Http\Controllers\Api\AttendanceController::class, 'all']);
 });
