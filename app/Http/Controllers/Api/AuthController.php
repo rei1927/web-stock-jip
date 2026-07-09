@@ -58,8 +58,8 @@ class AuthController extends Controller
             'Super Admin' => 'super_admin',
             'Admin' => 'admin',
             'Sales' => 'sales',
-            'Sales Manager' => 'admin',
-            'Manager' => 'admin',
+            'Sales Manager' => 'sales_manager',
+            'Manager' => 'sales_manager',
         ];
         $role = $request->role;
         $dbRole = $roleMap[$role] ?? strtolower($role);
@@ -75,6 +75,38 @@ class AuthController extends Controller
             'message' => 'User berhasil didaftarkan ke server',
             'user' => $newUser
         ], 201);
+    }
+
+    public function updateUser(Request $request)
+    {
+        // Hanya super admin yang boleh mengubah user dari aplikasi
+        if ($request->user()->role !== 'super_admin') {
+            return response()->json(['message' => 'Unauthorized. Only Super Admin can update users.'], 403);
+        }
+
+        $request->validate([
+            'email' => 'required|email|exists:users,email',
+            'role' => 'required|string',
+        ]);
+
+        $roleMap = [
+            'Super Admin' => 'super_admin',
+            'Admin' => 'admin',
+            'Sales' => 'sales',
+            'Sales Manager' => 'sales_manager',
+            'Manager' => 'sales_manager',
+        ];
+        $role = $request->role;
+        $dbRole = $roleMap[$role] ?? strtolower($role);
+
+        $user = User::where('email', $request->email)->first();
+        $user->role = $dbRole;
+        $user->save();
+
+        return response()->json([
+            'message' => 'Role user berhasil diupdate',
+            'user' => $user
+        ]);
     }
 
     public function profile(Request $request)
