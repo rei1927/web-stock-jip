@@ -109,6 +109,32 @@ class AuthController extends Controller
         ]);
     }
 
+    public function changePassword(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email|exists:users,email',
+            'password_lama' => 'required|string',
+            'password_baru' => 'required|string|min:4',
+        ]);
+
+        $user = User::where('email', $request->email)->first();
+
+        // Verifikasi password_lama
+        if (!Hash::check($request->password_lama, $user->password)) {
+            return response()->json([
+                'message' => 'Password lama tidak sesuai.'
+            ], 422);
+        }
+
+        // Jika cocok, update ke password_baru
+        $user->password = Hash::make($request->password_baru);
+        $user->save();
+
+        return response()->json([
+            'message' => 'Password berhasil diperbarui.'
+        ], 200);
+    }
+
     public function profile(Request $request)
     {
         return response()->json([

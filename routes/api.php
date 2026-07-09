@@ -18,6 +18,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::post('/users/register', [AuthController::class, 'register']); // For Android sync
     Route::post('/users/update', [AuthController::class, 'updateUser']); // For Android sync role update
+    Route::post('/users/change-password', [AuthController::class, 'changePassword']); // For Android change password
     Route::get('/users', [AuthController::class, 'index']); // Get all users
 
     // FCM
