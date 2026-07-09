@@ -11,6 +11,16 @@ Route::get('/dashboard', [DashboardWebController::class, 'index'])->name('dashbo
 Route::get('broadcast', [BroadcastController::class, 'index'])->name('broadcast.index')->middleware('auth');
 Route::post('broadcast', [BroadcastController::class, 'send'])->name('broadcast.send')->middleware('auth');
 
+// Fallback route for serving images directly (fixes Docker symlink issues)
+Route::get('/storage/uploads/{filename}', function ($filename) {
+    $path = storage_path('app/public/uploads/' . $filename);
+    if (!file_exists($path)) {
+        abort(404);
+    }
+    $mimeType = mime_content_type($path);
+    return response()->file($path, ['Content-Type' => $mimeType]);
+})->where('filename', '.*');
+
 Route::get('/login', [SessionsController::class, 'create'])->name('login');
 Route::post('/session', [SessionsController::class, 'store']);
 Route::post('/logout', [SessionsController::class, 'destroy'])->name('logout');
