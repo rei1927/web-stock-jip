@@ -47,10 +47,11 @@ class AttendanceController extends Controller
         $attendance = Attendance::create([
             'user_id' => $user->id,
             'type' => $request->type,
-            'lat' => $request->lat,
-            'long' => $request->long,
-            'address' => $request->address,
-            'photo_url' => $request->photo ?? $request->photo_url,
+            'location' => $request->address ?? ($request->lat ? $request->lat . ',' . $request->long : ''),
+            'lat' => $request->lat ?? '',
+            'long' => $request->long ?? '',
+            'address' => $request->address ?? '',
+            'photo_url' => $request->photo ?? $request->photo_url ?? '',
             'timestamp' => $request->timestamp ?? now(),
         ]);
 
