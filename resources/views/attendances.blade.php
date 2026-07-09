@@ -69,7 +69,9 @@
                       </td>
                       <td class="align-middle text-center">
                         @if($record->photo_url)
-                            <img src="{{ $record->photo_url }}" class="avatar avatar-sm rounded-circle" alt="photo">
+                            <a href="javascript:;" onclick="document.getElementById('modalPhotoImage').src='{{ $record->photo_url }}'" data-bs-toggle="modal" data-bs-target="#photoModal" class="text-secondary" title="Lihat Foto">
+                                <i class="fas fa-image text-info text-lg"></i>
+                            </a>
                         @else
                             -
                         @endif
@@ -96,6 +98,23 @@
     </div>
   </main>
   
+  <!-- Photo Modal -->
+  <div class="modal fade" id="photoModal" tabindex="-1" role="dialog" aria-labelledby="photoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="photoModalLabel">Foto Absensi</h5>
+          <button type="button" class="btn-close text-dark" data-bs-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body text-center p-0">
+          <img id="modalPhotoImage" src="" class="img-fluid" alt="Foto Absensi" style="width: 100%; border-bottom-left-radius: 0.5rem; border-bottom-right-radius: 0.5rem;">
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script>
     document.addEventListener("DOMContentLoaded", function() {
