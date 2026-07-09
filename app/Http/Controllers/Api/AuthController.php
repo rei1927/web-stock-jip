@@ -10,6 +10,11 @@ use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
+    public function index(Request $request)
+    {
+        return response()->json(User::all());
+    }
+
     public function login(Request $request)
     {
         $request->validate([
