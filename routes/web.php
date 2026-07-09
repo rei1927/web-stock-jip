@@ -19,6 +19,7 @@ use App\Http\Controllers\ClusterController;
 use App\Http\Controllers\UnitController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\TransactionController;
+use App\Http\Controllers\AttendanceWebController;
 
 Route::resource('clusters', ClusterController::class)->middleware('auth');
 Route::get('units/template', [UnitController::class, 'downloadTemplate'])->name('units.template')->middleware('auth');
@@ -29,3 +30,6 @@ Route::resource('customers', CustomerController::class)->middleware('auth');
 Route::post('transactions/bulk-action', [TransactionController::class, 'bulkAction'])->name('transactions.bulkAction')->middleware('auth');
 Route::resource('transactions', TransactionController::class)->middleware('auth');
 Route::resource('users', App\Http\Controllers\UserController::class)->middleware('auth');
+
+Route::get('attendances', [AttendanceWebController::class, 'index'])->name('attendances.index')->middleware('auth');
+Route::get('attendances/export', [AttendanceWebController::class, 'export'])->name('attendances.export')->middleware('auth');

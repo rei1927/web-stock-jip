@@ -114,6 +114,14 @@
           <span class="nav-link-text ms-1">Broadcast</span>
         </a>
       </li>
+      <li class="nav-item">
+        <a class="nav-link {{ (Request::is('attendances') ? 'active' : '') }}" href="{{ url('attendances') }}">
+          <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
+            <i class="ni ni-calendar-grid-58 text-info text-sm opacity-10" aria-hidden="true"></i>
+          </div>
+          <span class="nav-link-text ms-1">Attendances</span>
+        </a>
+      </li>
       @if(auth()->user()->role === 'super_admin')
       <li class="nav-item">
         <a class="nav-link {{ (Request::is('users') ? 'active' : '') }}" href="{{ url('users') }}">
