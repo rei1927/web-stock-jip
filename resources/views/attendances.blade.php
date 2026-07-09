@@ -69,7 +69,7 @@
                       </td>
                       <td class="align-middle text-center">
                         @if($record->photo_url)
-                            <a href="javascript:;" onclick="document.getElementById('modalPhotoImage').src='{{ $record->photo_url }}'" data-bs-toggle="modal" data-bs-target="#photoModal" class="text-secondary" title="Lihat Foto">
+                            <a href="javascript:;" onclick="document.getElementById('modalPhotoImage').style.display='block'; document.getElementById('modalPhotoError').style.display='none'; document.getElementById('modalPhotoImage').src='{{ $record->photo_url }}'; document.getElementById('modalPhotoUrlText').innerText='{{ $record->photo_url }}';" data-bs-toggle="modal" data-bs-target="#photoModal" class="text-secondary" title="Lihat Foto">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#17c1e8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
                             </a>
                         @else
@@ -108,8 +108,15 @@
             <span aria-hidden="true">&times;</span>
           </button>
         </div>
-        <div class="modal-body text-center p-0">
-          <img id="modalPhotoImage" src="" class="img-fluid" alt="Foto Absensi" style="width: 100%; border-bottom-left-radius: 0.5rem; border-bottom-right-radius: 0.5rem;">
+        <div class="modal-body text-center p-0 pb-3">
+          <img id="modalPhotoImage" src="" class="img-fluid" alt="Foto Absensi" style="width: 100%; border-bottom-left-radius: 0.5rem; border-bottom-right-radius: 0.5rem;" onerror="this.style.display='none'; document.getElementById('modalPhotoError').style.display='block';">
+          <div id="modalPhotoError" class="p-4" style="display: none;">
+            <i class="fas fa-broken-link text-danger text-4xl mb-3"></i>
+            <h6 class="text-danger">Gambar Tidak Dapat Diakses</h6>
+            <p class="text-xs text-secondary mb-1">URL gambar yang tersimpan adalah:</p>
+            <code id="modalPhotoUrlText" class="text-xxs text-wrap" style="word-break: break-all;"></code>
+            <p class="text-xs text-secondary mt-3">Jika URL di atas diawali dengan <b>http://localhost</b> atau IP internal, pastikan Anda mengubah <b>APP_URL</b> di file <b>.env</b> server Proxmox Anda menjadi IP/Domain yang benar, lalu coba absen ulang.</p>
+          </div>
         </div>
       </div>
     </div>
