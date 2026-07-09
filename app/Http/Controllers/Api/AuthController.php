@@ -49,11 +49,12 @@ class AuthController extends Controller
             'role' => 'required|string',
         ]);
 
-        // Map Android roles to DB roles
         $roleMap = [
             'Super Admin' => 'super_admin',
             'Admin' => 'admin',
             'Sales' => 'sales',
+            'Sales Manager' => 'admin',
+            'Manager' => 'admin',
         ];
         $role = $request->role;
         $dbRole = $roleMap[$role] ?? strtolower($role);
