@@ -26,12 +26,21 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/broadcast-notification', [FCMController::class, 'broadcast']);
 
     // Master Data
-    Route::get('/clusters', [ClusterController::class, 'index']);
+    Route::get('/units', [UnitController::class, 'index']);
     Route::post('/units/update-status', [UnitController::class, 'updateStatus']);
     Route::post('/units/submit-sold', [UnitController::class, 'submitSold']);
+    Route::post('/units/upload-utj', [\App\Http\Controllers\Api\UploadController::class, 'uploadImage']);
 
-    // Transactions
+    // Clusters API
+    Route::get('/clusters', [ClusterController::class, 'index']);
+
+    // Transactions API
     Route::get('/transactions', [TransactionController::class, 'index']);
     Route::post('/transactions/hold', [TransactionController::class, 'hold']);
     Route::post('/transactions/book', [TransactionController::class, 'book']);
+
+    // Attendance API
+    Route::post('/attendance/upload-photo', [\App\Http\Controllers\Api\UploadController::class, 'uploadImage']);
+    Route::post('/attendance/submit', [\App\Http\Controllers\Api\AttendanceController::class, 'submit']);
+    Route::get('/attendance/all', [\App\Http\Controllers\Api\AttendanceController::class, 'all']);
 });
