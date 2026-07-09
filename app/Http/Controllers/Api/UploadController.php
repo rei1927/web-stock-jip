@@ -20,19 +20,27 @@ class UploadController extends Controller
         // Generate random hash for filename to prevent guessing
         $filename = Str::random(40) . '.' . $file->getClientOriginalExtension();
         
-        // Simpan ke MinIO via disk 's3' dengan visibility public
-        // menggunakan path 'uploads'
-        $path = Storage::disk('s3')->putFileAs('uploads', $file, $filename, 'public');
+        // Gunakan disk dari env, default ke 'public'
+        $disk = env('FILESYSTEM_DISK', 'public');
+        
+        try {
+            $path = Storage::disk($disk)->putFileAs('uploads', $file, $filename, 'public');
 
-        if (!$path) {
+            if (!$path) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => "Failed to upload image to disk: $disk. Please check .env configuration and storage permissions."
+                ], 500);
+            }
+
+            // Dapatkan Public URL
+            $url = Storage::disk($disk)->url($path);
+        } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Failed to upload image'
+                'message' => "Exception on disk '$disk': " . $e->getMessage()
             ], 500);
         }
-
-        // Dapatkan Public URL
-        $url = Storage::disk('s3')->url($path);
 
         return response()->json([
             'status' => 'success',
