@@ -47,41 +47,47 @@ class DashboardWebController extends Controller
         $totalUsers = \App\Models\User::count();
         $totalTransactions = \App\Models\Transaction::count();
 
-        // Chart Data
+        // Chart Data (Filtered by start_date and end_date)
+        $startDateChartStr = $request->query('start_date');
+        $endDateChartStr = $request->query('end_date');
+        
+        $endDateChart = $endDateChartStr ? \Carbon\Carbon::parse($endDateChartStr)->endOfDay() : $now->copy()->endOfDay();
+        $startDateChart = $startDateChartStr ? \Carbon\Carbon::parse($startDateChartStr)->startOfDay() : $now->copy()->subDays(6)->startOfDay(); // Default 7 days
+        
+        $diffInDays = $startDateChart->diffInDays($endDateChart);
+        if ($diffInDays < 0) $diffInDays = 0;
+        
+        $previousEndDateChart = $startDateChart->copy()->subDay()->endOfDay();
+        $previousStartDateChart = $previousEndDateChart->copy()->subDays($diffInDays)->startOfDay();
+
+        // Optimized Queries using grouping
+        $currentTransactions = \App\Models\Transaction::join('units', 'transactions.unit_id', '=', 'units.id')
+            ->whereBetween('transactions.created_at', [$startDateChart, $endDateChart])
+            ->selectRaw('DATE(transactions.created_at) as date, SUM(units.selling_price) as total')
+            ->groupBy('date')
+            ->pluck('total', 'date');
+
+        $previousTransactions = \App\Models\Transaction::join('units', 'transactions.unit_id', '=', 'units.id')
+            ->whereBetween('transactions.created_at', [$previousStartDateChart, $previousEndDateChart])
+            ->selectRaw('DATE(transactions.created_at) as date, SUM(units.selling_price) as total')
+            ->groupBy('date')
+            ->pluck('total', 'date');
+
         $chartLabels = [];
         $chartData = [];
+        $previousChartData = [];
 
-        if ($period === 'monthly') {
-            for ($i = 5; $i >= 0; $i--) {
-                $mStart = $now->copy()->subMonths($i)->startOfMonth();
-                $mEnd = $now->copy()->subMonths($i)->endOfMonth();
-                $val = \App\Models\Transaction::join('units', 'transactions.unit_id', '=', 'units.id')
-                    ->whereBetween('transactions.created_at', [$mStart, $mEnd])
-                    ->sum('units.selling_price');
-                $chartLabels[] = $mStart->format('M Y');
-                $chartData[] = $val;
-            }
-        } elseif ($period === 'weekly') {
-            for ($i = 3; $i >= 0; $i--) {
-                $wStart = $now->copy()->subWeeks($i)->startOfWeek();
-                $wEnd = $now->copy()->subWeeks($i)->endOfWeek();
-                $val = \App\Models\Transaction::join('units', 'transactions.unit_id', '=', 'units.id')
-                    ->whereBetween('transactions.created_at', [$wStart, $wEnd])
-                    ->sum('units.selling_price');
-                $chartLabels[] = $wStart->format('d M');
-                $chartData[] = $val;
-            }
-        } else {
-            for ($i = 6; $i >= 0; $i--) {
-                $dStart = $now->copy()->subDays($i)->startOfDay();
-                $dEnd = $now->copy()->subDays($i)->endOfDay();
-                $val = \App\Models\Transaction::join('units', 'transactions.unit_id', '=', 'units.id')
-                    ->whereBetween('transactions.created_at', [$dStart, $dEnd])
-                    ->sum('units.selling_price');
-                $chartLabels[] = $dStart->format('d M');
-                $chartData[] = $val;
-            }
+        for ($i = 0; $i <= $diffInDays; $i++) {
+            $currentDate = $startDateChart->copy()->addDays($i);
+            $previousDate = $previousStartDateChart->copy()->addDays($i);
+            
+            $chartLabels[] = $currentDate->format('d M');
+            $chartData[] = $currentTransactions->get($currentDate->format('Y-m-d'), 0);
+            $previousChartData[] = $previousTransactions->get($previousDate->format('Y-m-d'), 0);
         }
+        
+        $chartStartDate = $startDateChart->format('Y-m-d');
+        $chartEndDate = $endDateChart->format('Y-m-d');
 
         return view('dashboard', compact(
             'period',
@@ -90,7 +96,10 @@ class DashboardWebController extends Controller
             'totalUsers',
             'totalTransactions',
             'chartLabels',
-            'chartData'
+            'chartData',
+            'previousChartData',
+            'chartStartDate',
+            'chartEndDate'
         ));
     }
 }

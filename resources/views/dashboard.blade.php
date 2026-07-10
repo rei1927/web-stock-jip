@@ -86,12 +86,22 @@
   <div class="row mt-4">
     <div class="col-lg-12">
       <div class="card z-index-2">
-        <div class="card-header pb-0">
-          <h6>Grafik Omzet ({{ ucfirst(request()->query('period', 'daily')) }})</h6>
-          <p class="text-sm">
-            <i class="fa fa-arrow-{{ $omzetChange >= 0 ? 'up text-success' : 'down text-danger' }}"></i>
-            <span class="font-weight-bold">{{ number_format(abs($omzetChange), 1) }}% {{ $omzetChange >= 0 ? 'lebih tinggi' : 'lebih rendah' }}</span> dari sebelumnya
-          </p>
+        <div class="card-header pb-0 d-flex justify-content-between align-items-center">
+          <div>
+            <h6>Grafik Omzet</h6>
+            <p class="text-sm mb-0">
+              Menampilkan data dari <span class="font-weight-bold">{{ \Carbon\Carbon::parse($chartStartDate)->format('d M Y') }}</span> hingga <span class="font-weight-bold">{{ \Carbon\Carbon::parse($chartEndDate)->format('d M Y') }}</span>
+            </p>
+          </div>
+          <div>
+            <form method="GET" action="{{ url()->current() }}" class="d-flex align-items-center">
+              <input type="hidden" name="period" value="{{ request('period', 'daily') }}">
+              <input type="date" name="start_date" class="form-control form-control-sm me-2" value="{{ $chartStartDate }}">
+              <span class="mx-2 text-sm">-</span>
+              <input type="date" name="end_date" class="form-control form-control-sm me-2" value="{{ $chartEndDate }}">
+              <button type="submit" class="btn btn-sm btn-primary mb-0">Terapkan</button>
+            </form>
+          </div>
         </div>
         <div class="card-body p-3">
           <div class="chart">
@@ -125,8 +135,9 @@
         type: "line",
         data: {
           labels: @json($chartLabels),
-          datasets: [{
-              label: "Omzet (Rp)",
+          datasets: [
+            {
+              label: "Periode Saat Ini (Rp)",
               tension: 0.4,
               borderWidth: 0,
               pointRadius: 0,
@@ -136,8 +147,20 @@
               fill: true,
               data: @json($chartData),
               maxBarThickness: 6
-
             },
+            {
+              label: "Periode Sebelumnya (Rp)",
+              tension: 0.4,
+              borderWidth: 0,
+              pointRadius: 0,
+              borderColor: "#8392ab",
+              borderWidth: 3,
+              borderDash: [5, 5],
+              backgroundColor: "transparent",
+              fill: false,
+              data: @json($previousChartData),
+              maxBarThickness: 6
+            }
           ],
         },
         options: {
