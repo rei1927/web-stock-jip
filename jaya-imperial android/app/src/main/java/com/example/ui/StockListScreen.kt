@@ -42,6 +42,7 @@ fun StockListScreen(
     viewModel: PropertyViewModel,
     onBack: () -> Unit
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     val currentUser by viewModel.currentUser.collectAsState()
     val filteredUnits by viewModel.filteredUnits.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
@@ -58,7 +59,7 @@ fun StockListScreen(
     val syncError by viewModel.syncError.collectAsState()
 
     val role = currentUser?.role ?: "Sales"
-    val isAdmin = role == "Admin" || role == "Super Admin"
+    val isAdmin = role.contains("Admin", ignoreCase = true) || role.contains("ADMIN", ignoreCase = true)
 
     Scaffold(
         topBar = {
@@ -74,7 +75,7 @@ fun StockListScreen(
                         if (isSyncing) {
                             Text("Mensinkronisasi data...", fontSize = 10.sp, color = GoldAccent)
                         } else if (syncError != null) {
-                            Text("Gagal Sync: Hubungkan ke Wifi Kantor", fontSize = 10.sp, color = Color.Red)
+                            Text(syncError!!, fontSize = 10.sp, color = Color.Red, maxLines = 1)
                         }
                     }
                 },
@@ -895,11 +896,11 @@ fun StockListScreen(
 
     if (unitForSoldForm != null) {
         if (role == "Sales") {
-            SoldPhotoSubmissionDialog(
+            SoldProposalFormDialog(
                 unit = unitForSoldForm!!,
                 onDismiss = { unitForSoldForm = null },
-                onSubmit = { photoUri ->
-                    viewModel.submitSoldPhoto(unitForSoldForm!!, photoUri)
+                onSubmit = { proposal, gimmicks ->
+                    viewModel.submitSoldProposal(unitForSoldForm!!, proposal, gimmicks, context)
                     unitForSoldForm = null
                 }
             )
@@ -998,68 +999,6 @@ fun EditUnitDialog(
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text("Batal") }
-        }
-    )
-}
-
-@Composable
-fun SoldPhotoSubmissionDialog(
-    unit: HousingUnit,
-    onDismiss: () -> Unit,
-    onSubmit: (String) -> Unit
-) {
-    var photoUploaded by remember { mutableStateOf(false) }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Unggah Form Penjualan", fontWeight = FontWeight.Bold) },
-        text = {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    "Silakan unggah foto fisik Formulir Penjualan untuk unit ${unit.clusterName} - ${unit.block}.",
-                    fontSize = 12.sp,
-                    color = ContentSecondary,
-                    textAlign = TextAlign.Center
-                )
-
-                Spacer(modifier = Modifier.height(20.dp))
-
-                Box(
-                    modifier = Modifier
-                        .size(120.dp)
-                        .background(NavyPrimary.copy(alpha = 0.05f), shape = RoundedCornerShape(16.dp))
-                        .clickable { photoUploaded = true } // Simulate upload
-                        .border(1.dp, NavyPrimary.copy(alpha = 0.2f), shape = RoundedCornerShape(16.dp)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (!photoUploaded) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(Icons.Default.AddAPhoto, contentDescription = null, tint = NavyPrimary, modifier = Modifier.size(32.dp))
-                            Text("Ambil Foto", fontSize = 10.sp, color = NavyPrimary, fontWeight = FontWeight.Bold)
-                        }
-                    } else {
-                        Icon(Icons.Default.CheckCircle, contentDescription = null, tint = TersediaGreen, modifier = Modifier.size(48.dp))
-                    }
-                }
-
-                if (photoUploaded) {
-                    Text("Foto berhasil dipilih.", fontSize = 11.sp, color = TersediaGreen, modifier = Modifier.padding(top = 8.dp))
-                }
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = { onSubmit("content://simulated/path/to/photo.jpg") },
-                enabled = photoUploaded,
-                colors = ButtonDefaults.buttonColors(containerColor = NavyPrimary)
-            ) {
-                Text("Kirim Pengajuan")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Batal")
-            }
         }
     )
 }

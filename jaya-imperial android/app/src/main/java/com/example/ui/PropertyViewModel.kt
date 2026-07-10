@@ -12,6 +12,13 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import java.util.Calendar
 import kotlin.math.pow
+import android.content.Context
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.toRequestBody
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import java.io.ByteArrayOutputStream
 
 class PropertyViewModel(private val repository: PropertyRepository) : ViewModel() {
 
@@ -27,6 +34,9 @@ class PropertyViewModel(private val repository: PropertyRepository) : ViewModel(
 
     private val _fcmToken = MutableStateFlow<String>("Loading...")
     val fcmToken = _fcmToken.asStateFlow()
+
+    private val _lastAttendanceStatus = MutableStateFlow("Belum Absen")
+    val lastAttendanceStatus: StateFlow<String> = _lastAttendanceStatus.asStateFlow()
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
@@ -159,8 +169,37 @@ class PropertyViewModel(private val repository: PropertyRepository) : ViewModel(
 
     // --- 3. INITIALIZATION ---
     init {
+        // Load active session from local DB
         viewModelScope.launch(Dispatchers.IO) {
-            syncData()
+            try {
+                val users = repository.getAllUsersSync()
+                val activeUser = users.find { !it.authToken.isNullOrEmpty() }
+                if (activeUser != null) {
+                    // Sanitize role when loading session
+                    val rawRole = activeUser.role
+                    val sanitizedRole = when {
+                        rawRole.contains("SUPER", ignoreCase = true) -> "Super Admin"
+                        rawRole.contains("ADMIN", ignoreCase = true) -> "Admin"
+                        rawRole.contains("MANAGER", ignoreCase = true) -> "Sales Manager"
+                        else -> "Sales"
+                    }
+                    _currentUser.value = activeUser.copy(role = sanitizedRole)
+                    Log.d("SESSION", "Auto-login success for: ${activeUser.username} as $sanitizedRole")
+
+                    // Trigger initial sync after session is loaded
+                    syncData()
+                    refreshAttendanceStatus()
+                } else {
+                    // Even without login, we can try to sync public data
+                    syncData()
+                }
+            } catch (e: Exception) {
+                Log.e("SESSION", "Failed to load session: ${e.message}")
+                syncData()
+            }
+        }
+
+        viewModelScope.launch(Dispatchers.IO) {
             while (true) {
                 checkAndReleaseExpiredHolds()
                 delay(10000)
@@ -182,56 +221,69 @@ class PropertyViewModel(private val repository: PropertyRepository) : ViewModel(
             val identifier = emailOrUsername.trim().lowercase()
             Log.d("LOGIN", "Attempting login for: $identifier")
 
+            // WAJIB login via Server Laravel untuk keamanan dan sinkronisasi data terbaru
             try {
-                // 1. Try server login first (if it looks like an email)
-                if (identifier.contains("@")) {
-                    Log.d("LOGIN", "Detected email, trying server login...")
-                    val response = repository.loginOnServer(identifier, password)
-                    val serverUser = response.user
-                    val localUser = User(
-                        username = identifier,
-                        name = serverUser.name,
-                        role = serverUser.role ?: "Sales",
-                        pin = password,
-                        authToken = response.access_token
-                    )
-                    repository.insertUser(localUser)
-                    _currentUser.value = localUser
-                    Log.d("LOGIN", "Server login success for $identifier")
-                    onResult(true)
-                    return@launch
+                val response = repository.loginOnServer(identifier, password)
+                val serverUser = response.user
+
+                // Sanitize role for consistency across the app
+                val rawRole = serverUser.role ?: "Sales"
+                val sanitizedRole = when {
+                    rawRole.contains("SUPER", ignoreCase = true) -> "Super Admin"
+                    rawRole.contains("ADMIN", ignoreCase = true) -> "Admin"
+                    rawRole.contains("MANAGER", ignoreCase = true) -> "Sales Manager"
+                    else -> "Sales"
                 }
+
+                val localUser = User(
+                    username = identifier,
+                    name = serverUser.name,
+                    role = sanitizedRole,
+                    pin = password,
+                    authToken = response.access_token
+                )
+
+                // Pastikan database lokal bersih dari user lama sebelum menyimpan sesi baru
+                repository.getAllUsersSync().forEach { repository.deleteUser(it) }
+                repository.insertUser(localUser)
+
+                _currentUser.value = localUser
+                _syncError.value = null // Reset pesan error jika ada
+
+                Log.d("LOGIN", "SERVER LOGIN SUCCESS. Token received.")
+
+                // Segera tarik data stok terbaru setelah login berhasil
+                syncData()
+                refreshAttendanceStatus()
+
+                onResult(true)
             } catch (e: Exception) {
-                Log.e("LOGIN", "Server login failed: ${e.message}")
-                // Continue to local fallback
-            }
-
-            // 2. Fallback to local DB
-            Log.d("LOGIN", "Performing local fallback for $identifier")
-            val localUsername = if (identifier.contains("@")) identifier.substringBefore("@") else identifier
-
-            val user = repository.getUserByUsername(identifier) ?: repository.getUserByUsername(localUsername)
-
-            if (user != null) {
-                Log.d("LOGIN", "Local user found: ${user.username}")
-                // Match provided password, or default '1234', or the generic word 'password' for testing
-                if (user.pin == password || password == "1234" || password == "123456" || user.pin == "1234" || password == "password") {
-                    _currentUser.value = user
-                    Log.d("LOGIN", "Local login success for ${user.username}")
-                    onResult(true)
-                } else {
-                    Log.w("LOGIN", "Local password mismatch for ${user.username}")
-                    onResult(false)
+                Log.e("LOGIN", "SERVER LOGIN FAILED. Error: ${e.localizedMessage}")
+                // Mendeteksi detail error dari server jika memungkinkan
+                val errorBody = (e as? retrofit2.HttpException)?.response()?.errorBody()?.string()
+                if (errorBody != null) {
+                    Log.e("LOGIN", "Server Error Detail: $errorBody")
                 }
-            } else {
-                Log.e("LOGIN", "User not found locally OR on server: $identifier")
+
+                val errorMsg = if (e.message?.contains("422") == true) {
+                    "Email atau Password ditolak server. Cek kembali data Anda."
+                } else {
+                    "Koneksi Gagal. Pastikan internet aktif dan server online."
+                }
+                _syncError.value = "Login Gagal: $errorMsg"
                 onResult(false)
             }
         }
     }
 
     fun logout() {
-        _currentUser.value = null
+        viewModelScope.launch(Dispatchers.IO) {
+            val user = _currentUser.value
+            if (user != null) {
+                repository.insertUser(user.copy(authToken = null))
+            }
+            _currentUser.value = null
+        }
     }
 
     fun setFcmToken(token: String) {
@@ -261,7 +313,51 @@ class PropertyViewModel(private val repository: PropertyRepository) : ViewModel(
     fun syncData(clusterName: String? = null) {
         viewModelScope.launch {
             _isSyncing.value = true
-            try { repository.syncUnitsFromWeb(clusterName) } catch (e: Exception) { _syncError.value = e.localizedMessage } finally { _isSyncing.value = false }
+            try {
+                val token = _currentUser.value?.authToken
+
+                // 1. Sync Units
+                repository.syncUnitsFromWeb(token, clusterName)
+
+                // 2. Sync Users (If logged in with token)
+                if (token != null) {
+                    repository.syncUsersFromWeb(token)
+                    refreshAttendanceStatus()
+
+                    // 3. Sync Attendance (For everyone, so Sales can see their history)
+                    try {
+                        val remoteAttendance = repository.getRemoteAttendance(token)
+                        remoteAttendance.forEach { repository.insertAttendance(it) }
+                    } catch (e: Exception) {
+                        Log.e("SYNC", "Gagal sync attendance: ${e.message}")
+                    }
+                }
+
+                _syncError.value = null // Clear error on success
+                Log.d("SYNC", "Data stock and users successfully synced from server.")
+            } catch (e: Exception) {
+                Log.e("SYNC", "Sync failed: ${e.message}")
+                val errorBody = (e as? retrofit2.HttpException)?.response()?.errorBody()?.string()
+                if (errorBody != null) {
+                    Log.e("SYNC", "Server Error Detail: $errorBody")
+                }
+
+                _syncError.value = when {
+                    e.message?.contains("401") == true -> {
+                        // Jika 401 (Unauthenticated), sebaiknya logout karena token tidak valid
+                        logout()
+                        "Sesi Habis. Silakan Login Kembali."
+                    }
+                    e.message?.contains("500") == true -> "Server Error (500)."
+                    e.message?.contains("404") == true -> "Endpoint Tidak Ditemukan."
+                    e is java.net.UnknownHostException -> "Server Tidak Ditemukan (Cek Internet)."
+                    e is java.net.SocketTimeoutException -> "Koneksi Timeout. Coba Lagi."
+                    e is java.io.IOException -> "Koneksi Internet Terputus (Offline)."
+                    else -> "Gagal Sync: ${e.localizedMessage}"
+                }
+            } finally {
+                _isSyncing.value = false
+            }
         }
     }
 
@@ -321,6 +417,49 @@ class PropertyViewModel(private val repository: PropertyRepository) : ViewModel(
             }
 
             repository.insertNotification(NotificationEntity(title = "PENGAJUAN SOLD ${unit.block}", message = "${user.name} mengunggah foto penjualan.", timestamp = System.currentTimeMillis()))
+        }
+    }
+
+    fun submitSoldProposal(unit: HousingUnit, proposal: SoldProposal, gimmicks: List<String>, context: android.content.Context) {
+        viewModelScope.launch {
+            val user = _currentUser.value ?: return@launch
+            val token = user.authToken
+
+            var finalProposal = proposal
+
+            // 1. Upload UTJ Photo to MinIO if exists and online
+            if (!token.isNullOrEmpty() && proposal.photoUri != null) {
+                try {
+                    val uri = android.net.Uri.parse(proposal.photoUri)
+                    val bytes = compressImage(context, uri)
+
+                    if (bytes != null) {
+                        val requestFile = bytes.toRequestBody("image/jpeg".toMediaTypeOrNull())
+                        val body = okhttp3.MultipartBody.Part.createFormData("file", "utj_${unit.block}_${System.currentTimeMillis()}.jpg", requestFile)
+
+                        val uploadRes = repository.uploadUtjPhoto(token, body)
+                        finalProposal = proposal.copy(photoUri = uploadRes.url)
+                        Log.d("UTJ", "Foto UTJ berhasil diupload ke MinIO: ${uploadRes.url}")
+                    }
+                } catch (e: Exception) {
+                    Log.e("UTJ", "Gagal upload UTJ: ${e.message}")
+                }
+            }
+
+            val updatedUnit = unit.copy(status = "Pending Sold", actionByUser = user.username, actionUserLabel = user.name)
+            repository.insertSoldProposal(finalProposal)
+            repository.updateUnit(updatedUnit)
+
+            // Push update to Web App
+            token?.let {
+                repository.updateUnitStatusOnServer(it, updatedUnit)
+            }
+
+            repository.insertNotification(NotificationEntity(
+                title = "PENGAJUAN SOLD ${unit.block}",
+                message = "${user.name} telah melengkapi form & foto UTJ untuk ${unit.block}.",
+                timestamp = System.currentTimeMillis()
+            ))
         }
     }
 
@@ -384,8 +523,80 @@ class PropertyViewModel(private val repository: PropertyRepository) : ViewModel(
     }
 
     // --- 6. USER & TEAM MANAGEMENT ---
-    fun addNewUser(username: String, name: String, role: String, pin: String, managerName: String?) {
-        viewModelScope.launch { repository.insertUser(User(username.trim().lowercase(), name.trim(), role, pin.ifBlank { "1234" }, managerName?.ifBlank { null })) }
+    fun addNewUser(username: String, name: String, role: String, pin: String, managerName: String? = null) {
+        viewModelScope.launch {
+            val userObj = User(
+                username = username.trim().lowercase(),
+                name = name.trim(),
+                role = role,
+                pin = pin.ifBlank { "123456" },
+                managerName = managerName?.ifBlank { null }
+            )
+
+            val currentUserToken = _currentUser.value?.authToken
+
+            if (!currentUserToken.isNullOrEmpty()) {
+                try {
+                    // 1. Kirim data ke Server
+                    val serverRole = when {
+                        userObj.role.contains("SUPER", ignoreCase = true) -> "Super Admin"
+                        userObj.role.contains("MANAGER", ignoreCase = true) -> "Sales Manager"
+                        userObj.role.contains("ADMIN", ignoreCase = true) -> "Admin"
+                        else -> "Sales"
+                    }
+
+                    try {
+                        // Coba register dulu
+                        val request = PropertyApiService.RegisterUserRequest(
+                            name = userObj.name,
+                            email = userObj.username,
+                            password = userObj.pin,
+                            role = serverRole
+                        )
+                        repository.apiService.registerUser("Bearer $currentUserToken", request)
+                        Log.d("ADD_USER", "User baru berhasil didaftarkan di server")
+                    } catch (e: Exception) {
+                        val errorBody = (e as? retrofit2.HttpException)?.response()?.errorBody()?.string()
+                        // Jika gagal karena email sudah ada, coba Update Role via endpoint baru
+                        if (errorBody?.contains("email", ignoreCase = true) == true || e.message?.contains("422") == true) {
+                            Log.d("ADD_USER", "Email sudah ada, mencoba update role...")
+                            val updateRequest = PropertyApiService.UpdateUserRequest(
+                                email = userObj.username,
+                                role = serverRole
+                            )
+                            repository.apiService.updateUser("Bearer $currentUserToken", updateRequest)
+                            Log.d("ADD_USER", "Role user berhasil diperbarui di server")
+                        } else {
+                            throw e // Lempar ke catch blok utama jika error lain
+                        }
+                    }
+
+                    // 2. Simpan di lokal
+                    repository.insertUser(userObj)
+                    Log.d("ADD_USER", "User berhasil disimpan di database lokal")
+                } catch (e: Exception) {
+                    Log.e("ADD_USER", "Gagal menyimpan ke server: ${e.message}")
+                    val errorBody = (e as? retrofit2.HttpException)?.response()?.errorBody()?.string()
+                    val specificError = if (errorBody != null) {
+                        Log.e("ADD_USER", "Server Detail: $errorBody")
+                        // Sederhanakan pesan error untuk user
+                        when {
+                            errorBody.contains("email", ignoreCase = true) -> "Email sudah terdaftar atau format salah."
+                            errorBody.contains("password", ignoreCase = true) -> "Password minimal 6 karakter."
+                            else -> errorBody
+                        }
+                    } else e.localizedMessage
+
+                    repository.insertUser(userObj)
+                    _syncError.value = "Gagal Sinkron: $specificError. (Data tersimpan di HP)"
+                }
+            } else {
+                // Tidak ada token, simpan lokal saja
+                repository.insertUser(userObj)
+                _syncError.value = "Mode Offline: User tidak sinkron ke database pusat. Harap Login saat Online."
+                Log.w("ADD_USER", "Token tidak ditemukan, menyimpan secara lokal saja")
+            }
+        }
     }
     fun deleteUser(user: User) {
         viewModelScope.launch { if (user.username != _currentUser.value?.username) repository.deleteUser(user) }
@@ -407,11 +618,158 @@ class PropertyViewModel(private val repository: PropertyRepository) : ViewModel(
         }
     }
 
+    fun changePassword(passwordLama: String, passwordBaru: String, onSuccess: () -> Unit, onError: (String) -> Unit) {
+        viewModelScope.launch {
+            val user = _currentUser.value
+            val token = user?.authToken
+            if (user != null && !token.isNullOrEmpty()) {
+                try {
+                    val request = PropertyApiService.ChangePasswordRequest(
+                        email = user.username,
+                        password_lama = passwordLama,
+                        password_baru = passwordBaru
+                    )
+                    repository.apiService.changePassword("Bearer $token", request)
+
+                    // Update PIN lokal juga agar tetap sinkron saat login offline berikutnya
+                    repository.insertUser(user.copy(pin = passwordBaru))
+
+                    onSuccess()
+                } catch (e: Exception) {
+                    val errorBody = (e as? retrofit2.HttpException)?.response()?.errorBody()?.string()
+                    val errorMessage = if (errorBody != null) {
+                        when {
+                            errorBody.contains("password", ignoreCase = true) -> "Password lama salah atau format password baru tidak sesuai."
+                            else -> "Gagal mengubah password. Silakan coba lagi."
+                        }
+                    } else "Koneksi internet bermasalah."
+                    onError(errorMessage)
+                }
+            } else {
+                onError("Sesi tidak valid, silakan login ulang.")
+            }
+        }
+    }
+
+    // --- HELPER: IMAGE COMPRESSION ---
+    private fun compressImage(context: Context, imageUri: android.net.Uri): ByteArray? {
+        return try {
+            val inputStream = context.contentResolver.openInputStream(imageUri)
+            val originalBitmap = BitmapFactory.decodeStream(inputStream)
+            inputStream?.close()
+
+            if (originalBitmap == null) return null
+
+            // Resize if too large (e.g. max width/height 1024)
+            val maxWidth = 1024
+            val maxHeight = 1024
+            var width = originalBitmap.width
+            var height = originalBitmap.height
+
+            if (width > maxWidth || height > maxHeight) {
+                val ratio = width.toFloat() / height.toFloat()
+                if (ratio > 1) {
+                    width = maxWidth
+                    height = (maxWidth / ratio).toInt()
+                } else {
+                    height = maxHeight
+                    width = (maxHeight * ratio).toInt()
+                }
+            }
+
+            val resizedBitmap = Bitmap.createScaledBitmap(originalBitmap, width, height, true)
+            val outputStream = ByteArrayOutputStream()
+
+            // Compress quality to 70% to hit the ~500KB target
+            resizedBitmap.compress(Bitmap.CompressFormat.JPEG, 70, outputStream)
+            val result = outputStream.toByteArray()
+
+            Log.d("COMPRESS", "Original: ${originalBitmap.byteCount / 1024}KB, Compressed: ${result.size / 1024}KB")
+            result
+        } catch (e: Exception) {
+            Log.e("COMPRESS", "Gagal kompres: ${e.message}")
+            null
+        }
+    }
+
     // --- 7. ATTENDANCE & GIMMICK ---
-    fun submitAttendance(lat: Double, lon: Double, photo: String, addr: String, type: String) {
+    fun refreshAttendanceStatus() {
+        viewModelScope.launch {
+            val token = _currentUser.value?.authToken
+            if (token != null) {
+                _lastAttendanceStatus.value = repository.getAttendanceStatusFromServer(token)
+            }
+        }
+    }
+
+    fun submitAttendance(lat: Double, lon: Double, photoUri: String, addr: String, type: String, context: android.content.Context) {
         viewModelScope.launch {
             val user = _currentUser.value ?: return@launch
-            repository.insertAttendance(AttendanceEntity(username = user.username, name = user.name, timestamp = System.currentTimeMillis(), latitude = lat, longitude = lon, photoUri = photo, address = addr, type = type))
+            val token = user.authToken
+
+            // Record baru yang akan disimpan (default offline)
+            var attendanceToSave = AttendanceEntity(
+                username = user.username,
+                name = user.name,
+                timestamp = System.currentTimeMillis(),
+                latitude = lat,
+                longitude = lon,
+                photoUri = photoUri, // Awalnya path lokal
+                address = addr,
+                type = type
+            )
+
+            // 1. Upload ke MinIO & Server jika Online
+            if (token != null) {
+                try {
+                    val uri = android.net.Uri.parse(photoUri)
+                    val bytes = compressImage(context, uri)
+
+                    if (bytes != null) {
+                        // A. Upload Foto
+                        val requestFile = bytes.toRequestBody("image/jpeg".toMediaTypeOrNull())
+                        val body = okhttp3.MultipartBody.Part.createFormData("file", "attendance_${System.currentTimeMillis()}.jpg", requestFile)
+                        val uploadRes = repository.uploadAttendancePhoto(token, body)
+
+                        // B. Kirim Data ke Server (Mendapatkan Remote ID & URL Final)
+                        // Backend sekarang pakai "Masuk" / "Keluar" langsung
+                        val resultDto = repository.submitAttendanceOnServer(
+                            authToken = token,
+                            type = type,
+                            lat = lat,
+                            lon = lon,
+                            address = addr,
+                            photoUrl = uploadRes.url
+                        )
+
+                        // C. Update data yang akan disimpan dengan info dari server
+                        attendanceToSave = attendanceToSave.copy(
+                            photoUri = resultDto.photo_url ?: photoUri,
+                            remoteId = resultDto.id
+                        )
+                        Log.d("ABSEN", "Berhasil kirim ke server & MinIO: ${resultDto.photo_url}")
+
+                        // Refresh status agar tombol berubah
+                        refreshAttendanceStatus()
+                    }
+                } catch (e: Exception) {
+                    Log.e("ABSEN", "Gagal sync server (Akan disimpan lokal): ${e.message}")
+                    val errorBody = (e as? retrofit2.HttpException)?.response()?.errorBody()?.string()
+                    if (errorBody != null) {
+                        Log.e("ABSEN", "Server Error Detail: $errorBody")
+                    }
+
+                    if (e.message?.contains("401") == true) {
+                        logout()
+                        _syncError.value = "Sesi Habis. Silakan Login Kembali."
+                    } else {
+                        _syncError.value = "Gagal Kirim Absen: ${e.localizedMessage}"
+                    }
+                }
+            }
+
+            // 2. Simpan ke database lokal
+            repository.insertAttendance(attendanceToSave)
         }
     }
     fun submitGimmickRequest(unit: HousingUnit, salesperson: User, details: String) {

@@ -27,6 +27,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import com.example.data.NotificationEntity
 import com.example.ui.theme.*
 import androidx.compose.ui.window.Dialog
@@ -49,13 +51,16 @@ fun DashboardScreen(
     val allUnits by viewModel.allUnits.collectAsState()
 
     var showBroadcastDialog by remember { mutableStateOf(false) }
+    var showProfileMenu by remember { mutableStateOf(false) }
+    var showChangePasswordDialog by remember { mutableStateOf(false) }
+
     val notifications by viewModel.allNotifications.collectAsState()
     val unreadCount = notifications.count { !it.isRead }
 
     val userInitial = currentUser?.name?.firstOrNull()?.toString()?.uppercase() ?: "U"
-    val role = currentUser?.role?.trim() ?: "Sales"
-    val isAdminOrSuperAdmin = role.equals("Admin", ignoreCase = true) || role.equals("Super Admin", ignoreCase = true)
-    val isManagerOrAbove = role.equals("Sales Manager", ignoreCase = true) || isAdminOrSuperAdmin
+    val role = currentUser?.role ?: "Sales"
+    val isAdminOrSuperAdmin = role.contains("Admin", ignoreCase = true) || role.contains("ADMIN", ignoreCase = true)
+    val isManagerOrAbove = role.contains("Manager", ignoreCase = true) || role.contains("MANAGER", ignoreCase = true) || isAdminOrSuperAdmin
 
     // Compute live analytics from Room Database
     val totalStock = allUnits.size
@@ -248,11 +253,12 @@ fun DashboardScreen(
                             )
                         } else if (syncError != null) {
                             Text(
-                                text = "OFFLINE - GAGAL SYNC",
+                                text = syncError!!.uppercase(),
                                 fontSize = 8.sp,
                                 fontWeight = FontWeight.Black,
                                 color = Color.Red,
-                                letterSpacing = 1.0.sp
+                                letterSpacing = 0.5.sp,
+                                maxLines = 1
                             )
                         } else {
                             Text(
@@ -313,7 +319,8 @@ fun DashboardScreen(
                         modifier = Modifier
                             .size(40.dp)
                             .background(TersediaGreenBg, shape = CircleShape)
-                            .clip(CircleShape),
+                            .clip(CircleShape)
+                            .clickable { showProfileMenu = true },
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
@@ -322,6 +329,21 @@ fun DashboardScreen(
                             fontWeight = FontWeight.Bold,
                             color = NavyDark
                         )
+
+                        DropdownMenu(
+                            expanded = showProfileMenu,
+                            onDismissRequest = { showProfileMenu = false },
+                            modifier = Modifier.background(Color.White)
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Ganti Password", color = ContentPrimary) },
+                                leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = NavyPrimary, modifier = Modifier.size(18.dp)) },
+                                onClick = {
+                                    showProfileMenu = false
+                                    showChangePasswordDialog = true
+                                }
+                            )
+                        }
                     }
                 }
             }
@@ -561,6 +583,15 @@ fun DashboardScreen(
                 )
             }
 
+            if (showChangePasswordDialog) {
+                ChangePasswordDialog(
+                    onDismiss = { showChangePasswordDialog = false },
+                    onConfirm = { oldPass, newPass, onSuccess, onError ->
+                        viewModel.changePassword(oldPass, newPass, onSuccess, onError)
+                    }
+                )
+            }
+
             // FCM Token Info (Admin Only)
             if (isAdminOrSuperAdmin) {
                 val token by viewModel.fcmToken.collectAsState()
@@ -667,6 +698,96 @@ fun BroadcastDialog(
                         Icon(Icons.AutoMirrored.Filled.Send, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(8.dp))
                         Text("Kirim")
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ChangePasswordDialog(
+    onDismiss: () -> Unit,
+    onConfirm: (String, String, () -> Unit, (String) -> Unit) -> Unit
+) {
+    var oldPassword by remember { mutableStateOf("") }
+    var newPassword by remember { mutableStateOf("") }
+    var confirmNewPassword by remember { mutableStateOf("") }
+    var errorText by remember { mutableStateOf<String?>(null) }
+    var isLoading by remember { mutableStateOf(false) }
+
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(shape = RoundedCornerShape(16.dp), color = Color.White) {
+            Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text("Ganti Password", fontWeight = FontWeight.Black, fontSize = 18.sp, color = NavyPrimary)
+
+                if (errorText != null) {
+                    Text(errorText!!, color = Color.Red, fontSize = 12.sp)
+                }
+
+                OutlinedTextField(
+                    value = oldPassword,
+                    onValueChange = { oldPassword = it },
+                    label = { Text("Password Lama") },
+                    modifier = Modifier.fillMaxWidth(),
+                    visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    shape = RoundedCornerShape(10.dp)
+                )
+
+                OutlinedTextField(
+                    value = newPassword,
+                    onValueChange = { newPassword = it },
+                    label = { Text("Password Baru") },
+                    modifier = Modifier.fillMaxWidth(),
+                    visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    shape = RoundedCornerShape(10.dp)
+                )
+
+                OutlinedTextField(
+                    value = confirmNewPassword,
+                    onValueChange = { confirmNewPassword = it },
+                    label = { Text("Konfirmasi Password Baru") },
+                    modifier = Modifier.fillMaxWidth(),
+                    visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    shape = RoundedCornerShape(10.dp)
+                )
+
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                    TextButton(onClick = onDismiss, enabled = !isLoading) { Text("Batal", color = Color.Gray) }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(
+                        onClick = {
+                            if (newPassword != confirmNewPassword) {
+                                errorText = "Konfirmasi password baru tidak cocok."
+                                return@Button
+                            }
+                            if (newPassword.length < 4) {
+                                errorText = "Password minimal 4 karakter."
+                                return@Button
+                            }
+
+                            isLoading = true
+                            errorText = null
+                            onConfirm(oldPassword, newPassword, {
+                                isLoading = false
+                                onDismiss()
+                            }, { error ->
+                                isLoading = false
+                                errorText = error
+                            })
+                        },
+                        enabled = oldPassword.isNotBlank() && newPassword.isNotBlank() && !isLoading,
+                        colors = ButtonDefaults.buttonColors(containerColor = NavyPrimary),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        if (isLoading) {
+                            CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color.White, strokeWidth = 2.dp)
+                        } else {
+                            Text("Simpan")
+                        }
                     }
                 }
             }

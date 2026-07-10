@@ -41,11 +41,16 @@ class PropertyRepository(private val propertyDao: PropertyDao) {
         return propertyDao.getAllUnitsSync()
     }
 
-    private val apiService = PropertyApiService.create()
+    suspend fun getAllUsersSync(): List<User> {
+        return propertyDao.getAllUsersSync()
+    }
 
-    suspend fun syncUnitsFromWeb(clusterName: String? = null) {
+    val apiService = PropertyApiService.create()
+
+    suspend fun syncUnitsFromWeb(authToken: String? = null, clusterName: String? = null) {
         try {
-            val remoteUnitsDto = apiService.getUnitsByCluster(clusterName)
+            val auth = if (authToken != null) "Bearer $authToken" else null
+            val remoteUnitsDto = apiService.getUnitsByCluster(auth, clusterName)
             val existingUnits = propertyDao.getAllUnitsSync()
 
             // 1. Identifikasi unit yang harus di-hapus (ada di HP tapi tidak ada di Web)
@@ -80,6 +85,30 @@ class PropertyRepository(private val propertyDao: PropertyDao) {
                         ))
                     } else {
                         propertyDao.insertUnit(remoteUnit)
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            throw e
+        }
+    }
+
+    suspend fun syncUsersFromWeb(authToken: String) {
+        try {
+            val remoteUsersDto = apiService.getUsers("Bearer $authToken")
+            if (remoteUsersDto.isNotEmpty()) {
+                remoteUsersDto.forEach { dto ->
+                    val remoteUser = dto.toEntity()
+                    val existing = propertyDao.getUserByUsername(remoteUser.username)
+                    if (existing != null) {
+                        // Update existing user (don't overwrite local PIN if it matches email)
+                        propertyDao.insertUser(remoteUser.copy(
+                            pin = existing.pin,
+                            authToken = existing.authToken
+                        ))
+                    } else {
+                        propertyDao.insertUser(remoteUser)
                     }
                 }
             }
@@ -169,7 +198,8 @@ class PropertyRepository(private val propertyDao: PropertyDao) {
                     uMukaPertamaDate = proposal.uMukaPertamaDate,
                     angsuranPertamaText = proposal.angsuranPertamaText,
                     email = proposal.email,
-                    gimmicks = gimmicks
+                    gimmicks = gimmicks,
+                    utj_photo_url = proposal.photoUri
                 )
             )
         } catch (e: Exception) {
@@ -188,6 +218,67 @@ class PropertyRepository(private val propertyDao: PropertyDao) {
 
     suspend fun updateFcmTokenOnServer(token: String, fcmToken: String) {
         apiService.updateFcmToken("Bearer $token", PropertyApiService.FcmTokenRequest(fcmToken))
+    }
+
+    suspend fun uploadUtjPhoto(authToken: String, filePart: okhttp3.MultipartBody.Part): PropertyApiService.UploadResponse {
+        return apiService.uploadUtjPhoto("Bearer $authToken", filePart)
+    }
+
+    suspend fun uploadAttendancePhoto(authToken: String, filePart: okhttp3.MultipartBody.Part): PropertyApiService.UploadResponse {
+        return apiService.uploadAttendancePhoto("Bearer $authToken", filePart)
+    }
+
+    suspend fun submitAttendanceOnServer(
+        authToken: String,
+        type: String,
+        lat: Double,
+        lon: Double,
+        address: String,
+        photoUrl: String
+    ): PropertyApiService.AttendanceDto {
+        val sdf = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault())
+        val timestamp = sdf.format(java.util.Date())
+
+        return apiService.submitAttendance(
+            "Bearer $authToken",
+            PropertyApiService.AttendanceRequest(
+                type = type, // "Masuk" or "Keluar"
+                lat = lat.toString(),
+                long = lon.toString(),
+                address = address,
+                photo_url = photoUrl,
+                timestamp = timestamp
+            )
+        )
+    }
+
+    suspend fun getAttendanceStatusFromServer(authToken: String): String {
+        return try {
+            val response = apiService.getAttendanceStatus("Bearer $authToken")
+            response.last_status
+        } catch (e: Exception) {
+            "Belum Absen"
+        }
+    }
+
+    suspend fun getRemoteAttendance(authToken: String): List<AttendanceEntity> {
+        return apiService.getAllAttendance("Bearer $authToken").map { dto ->
+            AttendanceEntity(
+                username = dto.username ?: "",
+                name = dto.name ?: "",
+                timestamp = try {
+                    java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).parse(dto.created_at ?: "")?.time ?: System.currentTimeMillis()
+                } catch (e: Exception) {
+                    System.currentTimeMillis()
+                },
+                latitude = 0.0,
+                longitude = 0.0,
+                photoUri = dto.photo_url ?: "",
+                address = dto.address ?: dto.location ?: "",
+                type = if (dto.type == "check_in" || dto.type == "Masuk") "Masuk" else "Keluar",
+                remoteId = dto.id
+            )
+        }
     }
 
     suspend fun insertSalesLog(log: SalesLog) {

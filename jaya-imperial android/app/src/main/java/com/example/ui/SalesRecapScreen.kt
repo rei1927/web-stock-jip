@@ -39,6 +39,7 @@ fun SalesRecapScreen(
     viewModel: PropertyViewModel,
     onBack: () -> Unit
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     val currentUser by viewModel.currentUser.collectAsState()
     val allUnits by viewModel.allUnits.collectAsState()
 
@@ -126,11 +127,11 @@ fun SalesRecapScreen(
 
     // Sold Form Dialog
     if (unitForSoldForm != null) {
-        SoldPhotoSubmissionDialogRecap(
+        SoldProposalFormDialog(
             unit = unitForSoldForm!!,
             onDismiss = { unitForSoldForm = null },
-            onSubmit = { photoUri ->
-                viewModel.submitSoldPhoto(unitForSoldForm!!, photoUri)
+            onSubmit = { proposal, gimmicks ->
+                viewModel.submitSoldProposal(unitForSoldForm!!, proposal, gimmicks, context)
                 unitForSoldForm = null
             }
         )
@@ -265,75 +266,6 @@ fun UnitDetailDialogRecap(
             }
         }
     }
-}
-
-@Composable
-fun SoldPhotoSubmissionDialogRecap(
-    unit: HousingUnit,
-    onDismiss: () -> Unit,
-    onSubmit: (String) -> Unit
-) {
-    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
-
-    // Gallery Launcher
-    val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        selectedImageUri = uri
-    }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Unggah Form UTJ", fontWeight = FontWeight.Bold, color = NavyDark) },
-        text = {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    "Silakan pilih foto Formulir UTJ dari galeri untuk unit ${unit.clusterName} - ${unit.block}.",
-                    fontSize = 12.sp,
-                    color = ContentSecondary,
-                    textAlign = TextAlign.Center
-                )
-                Spacer(modifier = Modifier.height(20.dp))
-                Box(
-                    modifier = Modifier
-                        .size(120.dp)
-                        .background(NavyPrimary.copy(alpha = 0.05f), shape = RoundedCornerShape(16.dp))
-                        .clickable { launcher.launch("image/*") }
-                        .border(1.dp, NavyPrimary.copy(alpha = 0.2f), shape = RoundedCornerShape(16.dp)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (selectedImageUri == null) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(Icons.Default.PhotoLibrary, contentDescription = null, tint = NavyPrimary, modifier = Modifier.size(32.dp))
-                            Text("Buka Galeri", fontSize = 10.sp, color = NavyPrimary, fontWeight = FontWeight.Bold)
-                        }
-                    } else {
-                        AsyncImage(
-                            model = selectedImageUri,
-                            contentDescription = null,
-                            modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(16.dp)),
-                            contentScale = ContentScale.Crop
-                        )
-                    }
-                }
-                if (selectedImageUri != null) {
-                    Text("Foto dipilih", fontSize = 11.sp, color = TersediaGreen, modifier = Modifier.padding(top = 8.dp))
-                }
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = { onSubmit(selectedImageUri.toString()) },
-                enabled = selectedImageUri != null,
-                colors = ButtonDefaults.buttonColors(containerColor = NavyPrimary)
-            ) {
-                Text("Kirim Pengajuan")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Batal", color = NavyPrimary) }
-        }
-    )
 }
 
 @Composable

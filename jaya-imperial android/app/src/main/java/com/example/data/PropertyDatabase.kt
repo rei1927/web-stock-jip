@@ -9,7 +9,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-@Database(entities = [HousingUnit::class, SalesLog::class, User::class, SalesTeam::class, SoldProposal::class, NotificationEntity::class, GimmickRequest::class, AttendanceEntity::class], version = 13, exportSchema = false)
+@Database(entities = [HousingUnit::class, SalesLog::class, User::class, SalesTeam::class, SoldProposal::class, NotificationEntity::class, GimmickRequest::class, AttendanceEntity::class], version = 15, exportSchema = false)
 abstract class PropertyDatabase : RoomDatabase() {
     abstract fun propertyDao(): PropertyDao
 
@@ -38,7 +38,7 @@ abstract class PropertyDatabase : RoomDatabase() {
 
         private suspend fun seedRequiredUsers(dao: PropertyDao) {
             val seedUsers = listOf(
-                User(username = "superadmin@jip.com", name = "Super Admin", role = "Super Admin", pin = "1234")
+                User(username = "superadmin@jip.com", name = "Super Admin", role = "Super Admin", pin = "123456")
             )
 
             for (user in seedUsers) {

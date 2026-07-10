@@ -70,9 +70,13 @@ fun AttendanceScreen(
     val myAttendance by viewModel.myAttendance.collectAsState()
     val allAttendance by viewModel.allAttendance.collectAsState()
     val allUsers by viewModel.allUsers.collectAsState()
+    val lastStatus by viewModel.lastAttendanceStatus.collectAsState()
+    val syncError by viewModel.syncError.collectAsState()
+
+    val snackbarHostState = remember { SnackbarHostState() }
 
     val role = currentUser?.role ?: ""
-    val isAdmin = role.contains("Admin")
+    val isAdmin = role.contains("Admin", ignoreCase = true) || role.contains("ADMIN", ignoreCase = true)
     val attendanceList = if (isAdmin) allAttendance else myAttendance
 
     // Admin Filter States
@@ -112,25 +116,12 @@ fun AttendanceScreen(
     var addressText by remember { mutableStateOf("Mencari lokasi...") }
     var isProcessing by remember { mutableStateOf(false) }
 
-    // Logic for restricting attendance type
-    val todayStart = remember {
-        Calendar.getInstance().apply {
-            set(Calendar.HOUR_OF_DAY, 0)
-            set(Calendar.MINUTE, 0)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-        }.timeInMillis
+    val hasClockedOutToday = remember(lastStatus) {
+        lastStatus == "Keluar"
     }
 
-    val hasClockedInToday = remember(myAttendance) {
-        myAttendance.any { it.type == "Masuk" && it.timestamp >= todayStart }
-    }
-    val hasClockedOutToday = remember(myAttendance) {
-        myAttendance.any { it.type == "Keluar" && it.timestamp >= todayStart }
-    }
-
-    var attendanceType by remember(hasClockedInToday) {
-        mutableStateOf(if (hasClockedInToday) "Keluar" else "Masuk")
+    var attendanceType by remember(lastStatus) {
+        mutableStateOf(if (lastStatus == "Masuk") "Keluar" else "Masuk")
     }
 
     // Clock state
@@ -138,10 +129,17 @@ fun AttendanceScreen(
     var currentDate by remember { mutableStateOf(SimpleDateFormat("EEEE, dd MMMM yyyy", Locale("id", "ID")).format(Date())) }
 
     LaunchedEffect(Unit) {
+        viewModel.refreshAttendanceStatus()
         while (true) {
             currentTime = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
             currentDate = SimpleDateFormat("EEEE, dd MMMM yyyy", Locale("id", "ID")).format(Date())
             kotlinx.coroutines.delay(1000)
+        }
+    }
+
+    LaunchedEffect(syncError) {
+        syncError?.let {
+            snackbarHostState.showSnackbar(it)
         }
     }
 
@@ -154,9 +152,17 @@ fun AttendanceScreen(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Kembali", tint = Color.White)
                     }
                 },
+                actions = {
+                    if (!isAdmin) {
+                        IconButton(onClick = { viewModel.refreshAttendanceStatus() }) {
+                            Icon(Icons.Default.Refresh, contentDescription = "Refresh Status", tint = Color.White)
+                        }
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = NavyDark)
             )
         },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         modifier = Modifier.fillMaxSize()
     ) { innerPadding ->
         if (!isAdmin && !permissionsState.allPermissionsGranted) {
@@ -332,7 +338,8 @@ fun AttendanceScreen(
                                             locationInfo?.second ?: 0.0,
                                             capturedImageUri.toString(),
                                             addressText,
-                                            attendanceType
+                                            attendanceType,
+                                            context
                                         )
                                         capturedImageUri = null
                                         isProcessing = false

@@ -40,7 +40,8 @@ fun UserManagementScreen(
     val currentUser by viewModel.currentUser.collectAsState()
     val allTeams by viewModel.allTeams.collectAsState()
 
-    val isSuperAdmin = currentUser?.role == "Super Admin"
+    val role = currentUser?.role ?: ""
+    val isSuperAdmin = role.contains("SUPER", ignoreCase = true)
     var selectedTab by remember(isSuperAdmin) { mutableStateOf(if (isSuperAdmin) 0 else 1) }
 
     var showAddUserDialog by remember { mutableStateOf(false) }

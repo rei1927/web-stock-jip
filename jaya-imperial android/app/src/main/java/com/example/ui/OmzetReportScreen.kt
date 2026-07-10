@@ -71,26 +71,26 @@ fun OmzetReportScreen(
     val reportingLogs = remember(rawSalesLogs, currentUser, selectedSalespersonFilter, selectedManagerFilter, startDate, endDate) {
         var logs = rawSalesLogs.filter { it.timestamp in startDate..endDate }
 
-        when (role) {
-            "Sales" -> {
-                logs = logs.filter { it.soldBy == username }
-            }
-            "Sales Manager" -> {
-                val teamMembers = allUsers.filter { it.managerName == username }.map { it.username }
-                logs = logs.filter { it.managerName == username || teamMembers.contains(it.soldBy) || it.soldBy == username }
+        val isAdminRole = role.contains("ADMIN", ignoreCase = true) || role.contains("Admin", ignoreCase = true)
+        val isManagerRole = role.contains("MANAGER", ignoreCase = true) || role.contains("Manager", ignoreCase = true)
 
-                if (selectedSalespersonFilter != null) {
-                    logs = logs.filter { it.soldBy == selectedSalespersonFilter }
-                }
+        if (isAdminRole) {
+            if (selectedManagerFilter != null) {
+                logs = logs.filter { it.managerName == selectedManagerFilter }
             }
-            else -> {
-                if (selectedManagerFilter != null) {
-                    logs = logs.filter { it.managerName == selectedManagerFilter }
-                }
-                if (selectedSalespersonFilter != null) {
-                    logs = logs.filter { it.soldBy == selectedSalespersonFilter }
-                }
+            if (selectedSalespersonFilter != null) {
+                logs = logs.filter { it.soldBy == selectedSalespersonFilter }
             }
+        } else if (isManagerRole) {
+            val teamMembers = allUsers.filter { it.managerName == username }.map { it.username }
+            logs = logs.filter { it.managerName == username || teamMembers.contains(it.soldBy) || it.soldBy == username }
+
+            if (selectedSalespersonFilter != null) {
+                logs = logs.filter { it.soldBy == selectedSalespersonFilter }
+            }
+        } else {
+            // Default to Sales role
+            logs = logs.filter { it.soldBy == username }
         }
         logs
     }

@@ -2,7 +2,6 @@ package com.example.ui
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -27,7 +26,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.R
-import com.example.ui.theme.GoldAccent
 import com.example.ui.theme.NavyDark
 import com.example.ui.theme.NavyPrimary
 
@@ -39,8 +37,14 @@ fun LoginScreen(
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var isPasswordVisible by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
     var isLoggingIn by remember { mutableStateOf(false) }
+
+    // Ambil pesan error langsung dari ViewModel
+    val serverErrorMessage by viewModel.syncError.collectAsState()
+
+    // Gunakan error lokal jika ada, jika tidak gunakan error dari server
+    var localErrorMessage by remember { mutableStateOf<String?>(null) }
+    val displayErrorMessage = localErrorMessage ?: serverErrorMessage
 
     Box(
         modifier = Modifier
@@ -63,7 +67,6 @@ fun LoginScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // Real estate company logo badge
             Image(
                 painter = painterResource(id = R.drawable.logo_jip),
                 contentDescription = "Jaya Imperial Park Logo",
@@ -84,14 +87,14 @@ fun LoginScreen(
             )
 
             Text(
-                text = "Aplikasi Management & KPR",
+                text = "SALES MANAGEMENT SYSTEM",
                 fontSize = 12.sp,
                 color = Color.Gray,
                 letterSpacing = 0.5.sp,
                 modifier = Modifier.padding(top = 2.dp, bottom = 20.dp)
             )
 
-            if (errorMessage != null) {
+            if (displayErrorMessage != null) {
                 Card(
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
                     modifier = Modifier
@@ -100,7 +103,7 @@ fun LoginScreen(
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Text(
-                        text = errorMessage!!,
+                        text = displayErrorMessage!!,
                         color = MaterialTheme.colorScheme.onErrorContainer,
                         fontSize = 12.sp,
                         modifier = Modifier.padding(12.dp),
@@ -114,10 +117,10 @@ fun LoginScreen(
                 value = username,
                 onValueChange = {
                     username = it
-                    errorMessage = null
+                    localErrorMessage = null
                 },
-                label = { Text("Email Pengguna") },
-                placeholder = { Text("e.g. admin@example.com") },
+                label = { Text("Email Pengguna", color = NavyPrimary) },
+                placeholder = { Text("e.g. admin@example.com", color = Color.Gray) },
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Default.Email,
@@ -131,8 +134,12 @@ fun LoginScreen(
                     .fillMaxWidth()
                     .testTag("username_input"),
                 colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = NavyDark,
+                    unfocusedTextColor = NavyDark,
                     focusedBorderColor = NavyPrimary,
-                    unfocusedBorderColor = Color.LightGray
+                    unfocusedBorderColor = Color.LightGray,
+                    focusedLabelColor = NavyPrimary,
+                    unfocusedLabelColor = Color.Gray
                 )
             )
 
@@ -143,10 +150,10 @@ fun LoginScreen(
                 value = password,
                 onValueChange = {
                     password = it
-                    errorMessage = null
+                    localErrorMessage = null
                 },
-                label = { Text("Kata Sandi") },
-                placeholder = { Text("Masukkan password Anda") },
+                label = { Text("Kata Sandi", color = NavyPrimary) },
+                placeholder = { Text("Masukkan password Anda", color = Color.Gray) },
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Default.Lock,
@@ -171,8 +178,12 @@ fun LoginScreen(
                     .fillMaxWidth()
                     .testTag("password_input"),
                 colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = NavyDark,
+                    unfocusedTextColor = NavyDark,
                     focusedBorderColor = NavyPrimary,
-                    unfocusedBorderColor = Color.LightGray
+                    unfocusedBorderColor = Color.LightGray,
+                    focusedLabelColor = NavyPrimary,
+                    unfocusedLabelColor = Color.Gray
                 )
             )
 
@@ -182,15 +193,13 @@ fun LoginScreen(
             Button(
                 onClick = {
                     if (username.isBlank()) {
-                        errorMessage = "Email tidak boleh kosong!"
+                        localErrorMessage = "Email tidak boleh kosong!"
                     } else {
                         isLoggingIn = true
                         viewModel.login(username, password) { success ->
                             isLoggingIn = false
                             if (success) {
                                 onLoginSuccess()
-                            } else {
-                                errorMessage = "Gagal login. Periksa email/password Anda."
                             }
                         }
                     }

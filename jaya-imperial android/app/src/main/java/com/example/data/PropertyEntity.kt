@@ -2,6 +2,7 @@ package com.example.data
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import androidx.room.Index
 
 @Entity(tableName = "users")
 data class User(
@@ -61,7 +62,10 @@ data class SalesTeam(
     val leaderUsername: String? = null // Sales Manager username
 )
 
-@Entity(tableName = "attendance_logs")
+@Entity(
+    tableName = "attendance_logs",
+    indices = [Index(value = ["remoteId"], unique = true)]
+)
 data class AttendanceEntity(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val username: String,
@@ -71,7 +75,8 @@ data class AttendanceEntity(
     val longitude: Double,
     val photoUri: String,
     val address: String = "",
-    val type: String = "Masuk" // "Masuk" or "Keluar"
+    val type: String = "Masuk", // "Masuk" or "Keluar"
+    val remoteId: Int? = null
 )
 
 @Entity(tableName = "gimmick_requests")
@@ -119,5 +124,3 @@ data class SoldProposal(
     val email: String = "",
     val sumber: String = ""
 )
-
-

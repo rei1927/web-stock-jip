@@ -42,9 +42,9 @@ fun GimmickManagementScreen(
     val allUnits by viewModel.allUnits.collectAsState()
     val allUsers by viewModel.allUsers.collectAsState()
 
-    val role = currentUser?.role ?: "Sales"
-    val isManager = role == "Sales Manager"
-    val isAdmin = role == "Admin" || role == "Super Admin"
+    val role = currentUser?.role?.trim() ?: "Sales"
+    val isManager = role.contains("MANAGER", ignoreCase = true)
+    val isAdmin = role.contains("ADMIN", ignoreCase = true)
 
     val displayRequests = if (isAdmin) allRequests else myRequests
 

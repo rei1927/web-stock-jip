@@ -11,14 +11,16 @@
               <div class="numbers">
                 <p class="text-sm mb-0 text-capitalize font-weight-bold">
                   Omzet
-                  <a href="#" class="ms-1 dropdown-toggle text-secondary" data-bs-toggle="dropdown" aria-expanded="false">
-                    {{ ucfirst(request()->query('period', 'daily')) }}
-                  </a>
-                  <ul class="dropdown-menu">
-                    <li><a class="dropdown-item" href="?period=daily">Daily (Harian)</a></li>
-                    <li><a class="dropdown-item" href="?period=weekly">Weekly (Mingguan)</a></li>
-                    <li><a class="dropdown-item" href="?period=monthly">Monthly (Bulanan)</a></li>
-                  </ul>
+                  <span class="dropdown d-inline">
+                    <a href="#" class="ms-1 dropdown-toggle text-secondary" data-bs-toggle="dropdown" id="periodDropdown" aria-expanded="false">
+                      {{ ucfirst(request()->query('period', 'daily')) }}
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="periodDropdown">
+                      <li><a class="dropdown-item" href="?period=daily">Daily (Harian)</a></li>
+                      <li><a class="dropdown-item" href="?period=weekly">Weekly (Mingguan)</a></li>
+                      <li><a class="dropdown-item" href="?period=monthly">Monthly (Bulanan)</a></li>
+                    </ul>
+                  </span>
                 </p>
                 <h5 class="font-weight-bolder mb-0">
                   Rp {{ number_format($currentOmzet, 0, ',', '.') }}
