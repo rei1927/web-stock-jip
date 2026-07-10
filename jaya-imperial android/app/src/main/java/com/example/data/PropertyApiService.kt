@@ -176,7 +176,7 @@ interface PropertyApiService {
     )
 
     data class SubmitSoldRequest(
-        val unitId: Int,
+        val unit_id: Int, // Backend requested this specific name
         val namaLengkap: String,
         val alamatKtp: String,
         val alamatSurat: String,

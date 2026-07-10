@@ -29,11 +29,13 @@ class DashboardWebController extends Controller
         // Current Omzet
         $currentOmzet = \App\Models\Transaction::join('units', 'transactions.unit_id', '=', 'units.id')
             ->where('transactions.created_at', '>=', $startDate)
+            ->whereIn('transactions.status', ['success', 'approved'])
             ->sum('units.selling_price');
 
         // Previous Omzet
         $previousOmzet = \App\Models\Transaction::join('units', 'transactions.unit_id', '=', 'units.id')
             ->whereBetween('transactions.created_at', [$previousStartDate, $previousEndDate])
+            ->whereIn('transactions.status', ['success', 'approved'])
             ->sum('units.selling_price');
 
         $omzetChange = 0;
@@ -45,7 +47,7 @@ class DashboardWebController extends Controller
 
         // General Metrics
         $totalUsers = \App\Models\User::count();
-        $totalTransactions = \App\Models\Transaction::count();
+        $totalTransactions = \App\Models\Transaction::whereIn('status', ['success', 'approved'])->count();
 
         // Chart Data (Filtered by start_date and end_date)
         $startDateChartStr = $request->query('start_date');
@@ -63,12 +65,14 @@ class DashboardWebController extends Controller
         // Optimized Queries using grouping
         $currentTransactions = \App\Models\Transaction::join('units', 'transactions.unit_id', '=', 'units.id')
             ->whereBetween('transactions.created_at', [$startDateChart, $endDateChart])
+            ->whereIn('transactions.status', ['success', 'approved'])
             ->selectRaw('DATE(transactions.created_at) as date, SUM(units.selling_price) as total')
             ->groupBy('date')
             ->pluck('total', 'date');
 
         $previousTransactions = \App\Models\Transaction::join('units', 'transactions.unit_id', '=', 'units.id')
             ->whereBetween('transactions.created_at', [$previousStartDateChart, $previousEndDateChart])
+            ->whereIn('transactions.status', ['success', 'approved'])
             ->selectRaw('DATE(transactions.created_at) as date, SUM(units.selling_price) as total')
             ->groupBy('date')
             ->pluck('total', 'date');

@@ -173,7 +173,7 @@ class PropertyRepository(private val propertyDao: PropertyDao) {
             apiService.submitSold(
                 "Bearer $authToken",
                 PropertyApiService.SubmitSoldRequest(
-                    unitId = proposal.unitId,
+                    unit_id = proposal.unitId,
                     namaLengkap = proposal.namaLengkap,
                     alamatKtp = proposal.alamatKtp,
                     alamatSurat = proposal.alamatSurat,
