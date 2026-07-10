@@ -9,11 +9,11 @@
           <div class="row">
             <div class="col-8">
               <div class="numbers">
-                <div class="d-flex align-items-center justify-content-between">
-                  <p class="text-sm mb-0 text-capitalize font-weight-bold">Omzet</p>
+                <div class="d-flex align-items-center mb-0">
+                  <p class="text-sm mb-0 text-capitalize font-weight-bold me-1">Omzet</p>
                   <div class="dropdown">
-                    <a href="javascript:;" class="text-secondary text-xs font-weight-bold" data-bs-toggle="dropdown" id="periodDropdown" aria-expanded="false">
-                      {{ ucfirst(request()->query('period', 'daily')) }} <i class="fas fa-chevron-down ms-1"></i>
+                    <a href="javascript:;" class="text-secondary text-xs font-weight-bold" data-bs-toggle="dropdown" id="periodDropdown" aria-expanded="false" style="cursor: pointer;">
+                      ({{ ucfirst(request()->query('period', 'daily')) }}) <i class="fa fa-caret-down"></i>
                     </a>
                     <ul class="dropdown-menu px-2 py-2" aria-labelledby="periodDropdown">
                       <li><a class="dropdown-item border-radius-md" href="?period=daily">Daily (Harian)</a></li>
