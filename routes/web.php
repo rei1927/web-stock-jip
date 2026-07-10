@@ -14,14 +14,28 @@ Route::post('broadcast', [BroadcastController::class, 'send'])->name('broadcast.
 // Fallback route for serving images directly (fixes Docker symlink issues)
 // Using a different prefix than /storage/ so Nginx doesn't intercept it and return 404 before hitting Laravel
 Route::get('/attendance-photo/{filename}', function ($filename) {
-    // filename could be the full path like /storage/uploads/xxx.jpg or just xxx.jpg
     $basename = basename($filename);
-    $path = storage_path('app/public/uploads/' . $basename);
-    if (!file_exists($path)) {
+    
+    $possiblePaths = [
+        storage_path('app/public/uploads/' . $basename),
+        storage_path('app/private/uploads/' . $basename),
+        storage_path('app/uploads/' . $basename),
+    ];
+    
+    $foundPath = null;
+    foreach ($possiblePaths as $path) {
+        if (file_exists($path)) {
+            $foundPath = $path;
+            break;
+        }
+    }
+    
+    if (!$foundPath) {
         abort(404);
     }
-    $mimeType = mime_content_type($path);
-    return response()->file($path, ['Content-Type' => $mimeType]);
+    
+    $mimeType = mime_content_type($foundPath);
+    return response()->file($foundPath, ['Content-Type' => $mimeType]);
 })->where('filename', '.*')->name('attendance.photo');
 
 Route::get('/login', [SessionsController::class, 'create'])->name('login');
