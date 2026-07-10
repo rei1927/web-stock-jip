@@ -236,7 +236,7 @@ class PropertyViewModel(private val repository: PropertyRepository) : ViewModel(
                 }
 
                 val localUser = User(
-                    username = identifier,
+                    username = serverUser.email.lowercase(),
                     name = serverUser.name,
                     role = sanitizedRole,
                     pin = password,
@@ -391,15 +391,28 @@ class PropertyViewModel(private val repository: PropertyRepository) : ViewModel(
             val isPending = unit.status == "Pending Sold"
             val user = _currentUser.value
             val updatedUnit = unit.copy(status = "Tersedia", isSold = false, actionByUser = null, actionUserLabel = null, holdTimestamp = null)
-            repository.updateUnit(updatedUnit)
 
-            // Push update to Web App
-            user?.authToken?.let { token ->
-                repository.updateUnitStatusOnServer(token, updatedUnit)
+            try {
+                // 1. Update lokal dulu
+                repository.updateUnit(updatedUnit)
+
+                // 2. Push update ke Web App
+                user?.authToken?.let { token ->
+                    repository.updateUnitStatusOnServer(token, updatedUnit)
+                    // Segera sync ulang untuk memastikan data web sudah benar
+                    syncData()
+                }
+
+                repository.deleteSoldProposalForUnit(unit.id)
+                repository.insertNotification(NotificationEntity(
+                    title = if (isPending) "BATAL SOLD ${unit.block}" else "RELEASE HOLD ${unit.block}",
+                    message = "Unit ${unit.block} dikembalikan ke status TERSEDIA oleh ${user?.name ?: "Sistem"}.",
+                    timestamp = System.currentTimeMillis()
+                ))
+            } catch (e: Exception) {
+                Log.e("CANCEL_SOLD", "Gagal membatalkan: ${e.message}")
+                _syncError.value = "Gagal membatalkan di server. Cek koneksi Anda."
             }
-
-            repository.deleteSoldProposalForUnit(unit.id)
-            repository.insertNotification(NotificationEntity(title = if (isPending) "BATAL SOLD ${unit.block}" else "RELEASE HOLD ${unit.block}", message = "Status unit diperbarui oleh sistem.", timestamp = System.currentTimeMillis()))
         }
     }
 

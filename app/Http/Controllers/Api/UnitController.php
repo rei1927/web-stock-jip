@@ -42,9 +42,9 @@ class UnitController extends Controller
                 'bathrooms' => (int) ($details['bathrooms'] ?? 0),
                 'notes' => $details['notes'] ?? '',
                 'status' => $mappedStatus,
-                'actionByUser' => null, // Will be populated dynamically in Android App or via Transaction relations later
-                'actionUserLabel' => null,
-                'holdTimestamp' => null,
+                'actionByUser' => $details['actionByUser'] ?? null,
+                'actionUserLabel' => $details['actionUserLabel'] ?? null,
+                'holdTimestamp' => $details['holdTimestamp'] ?? null,
             ];
         });
 

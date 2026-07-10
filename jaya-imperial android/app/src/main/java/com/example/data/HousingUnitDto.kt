@@ -21,6 +21,21 @@ data class HousingUnitDto(
     @Json(name = "holdTimestamp") val holdTimestamp: Long?
 ) {
     fun toEntity(): HousingUnit {
+        val rawStatus = this.status.uppercase()
+        val normalizedStatus = when {
+            rawStatus.contains("HOLD") -> "Hold"
+            rawStatus.contains("TERJUAL") || rawStatus.contains("SOLD") -> "Terjual"
+            rawStatus.contains("PENDING") -> "Pending Sold"
+            else -> "Tersedia"
+        }
+
+        // Emergency fallback: If backend doesn't send actionByUser, try to extract from status string
+        // Example: "HOLD by sri" -> actionByUser: "sri"
+        var extractedUser = this.actionByUser
+        if (extractedUser.isNullOrEmpty() && rawStatus.contains("BY ")) {
+            extractedUser = this.status.substringAfter("by ", "").substringAfter("BY ", "").trim()
+        }
+
         return HousingUnit(
             clusterName = this.clusterName,
             block = this.block,
@@ -32,9 +47,9 @@ data class HousingUnitDto(
             bedrooms = this.bedrooms,
             bathrooms = this.bathrooms,
             notes = this.notes ?: "",
-            status = this.status,
-            actionByUser = this.actionByUser,
-            actionUserLabel = this.actionUserLabel,
+            status = normalizedStatus,
+            actionByUser = extractedUser,
+            actionUserLabel = this.actionUserLabel ?: extractedUser,
             holdTimestamp = this.holdTimestamp
         )
     }

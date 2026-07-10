@@ -71,17 +71,12 @@ class PropertyRepository(private val propertyDao: PropertyDao) {
                     }
 
                     if (localMatch != null) {
-                        val finalStatus = if (localMatch.status == "Pending Sold" && remoteUnit.status != "Terjual") {
-                            "Pending Sold"
-                        } else {
-                            remoteUnit.status
-                        }
-
+                        // Hilangkan proteksi "Pending Sold" yang kaku agar status bisa kembali ke "Tersedia" jika dibatalkan
                         propertyDao.updateUnit(remoteUnit.copy(
                             id = localMatch.id,
-                            status = finalStatus,
-                            actionByUser = remoteUnit.actionByUser ?: localMatch.actionByUser,
-                            actionUserLabel = remoteUnit.actionUserLabel ?: localMatch.actionUserLabel
+                            status = remoteUnit.status,
+                            actionByUser = remoteUnit.actionByUser,
+                            actionUserLabel = remoteUnit.actionUserLabel
                         ))
                     } else {
                         propertyDao.insertUnit(remoteUnit)

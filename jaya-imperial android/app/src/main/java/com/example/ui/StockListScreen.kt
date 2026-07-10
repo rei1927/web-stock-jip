@@ -1,5 +1,8 @@
 package com.example.ui
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
@@ -9,6 +12,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.foundation.layout.*
@@ -30,6 +34,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.example.data.HousingUnit
 import com.example.data.SoldProposal
 import com.example.ui.theme.*
@@ -54,6 +59,9 @@ fun StockListScreen(
     var selectedUnitDetail by remember { mutableStateOf<HousingUnit?>(null) }
     var unitForSoldForm by remember { mutableStateOf<HousingUnit?>(null) }
     var unitToEdit by remember { mutableStateOf<HousingUnit?>(null) }
+    var unitForManagerApproval by remember { mutableStateOf<HousingUnit?>(null) }
+    var showRejectConfirm by remember { mutableStateOf<HousingUnit?>(null) }
+    var showApproveConfirm by remember { mutableStateOf<Pair<HousingUnit, SoldProposal>?>(null) }
 
     val isSyncing by viewModel.isSyncing.collectAsState()
     val syncError by viewModel.syncError.collectAsState()
@@ -325,7 +333,9 @@ fun StockListScreen(
     // Modal dialog: Unit Specifications Detail & Interactive workflows
     if (selectedUnitDetail != null) {
         val unit = selectedUnitDetail!!
-        val isOwner = unit.actionByUser == currentUser?.username
+        val isOwner = unit.actionByUser?.equals(currentUser?.username, ignoreCase = true) == true ||
+                      unit.actionByUser?.equals(currentUser?.name, ignoreCase = true) == true ||
+                      unit.actionUserLabel?.equals(currentUser?.name, ignoreCase = true) == true
         val isManager = role.contains("Manager", ignoreCase = true)
         val isManagerOrAdmin = isManager || role.contains("Admin", ignoreCase = true)
         val userCanControlHold = isOwner || isManagerOrAdmin
@@ -600,26 +610,26 @@ fun StockListScreen(
                                 ) {
                                     Button(
                                         onClick = {
-                                            viewModel.releaseHoldOrRejectSold(unit)
                                             selectedUnitDetail = null
+                                            showRejectConfirm = unit
                                         },
                                         modifier = Modifier.weight(1.0f),
                                         colors = ButtonDefaults.buttonColors(containerColor = TerjualRed),
                                         shape = RoundedCornerShape(8.dp)
                                     ) {
-                                        Text("Tolak/Kembalikan", fontSize = 11.sp, color = Color.White)
+                                        Text("BATALKAN", fontSize = 11.sp, color = Color.White)
                                     }
 
                                     Button(
                                         onClick = {
-                                            viewModel.approveSoldUnit(unit)
                                             selectedUnitDetail = null
+                                            unitForManagerApproval = unit
                                         },
                                         modifier = Modifier.weight(1.2f),
                                         colors = ButtonDefaults.buttonColors(containerColor = TersediaGreen),
                                         shape = RoundedCornerShape(8.dp)
                                     ) {
-                                        Text("APPROVE PENJUALAN", fontSize = 11.sp, color = Color.White, fontWeight = FontWeight.Bold)
+                                        Text("FORM UTJ", fontSize = 11.sp, color = Color.White, fontWeight = FontWeight.Bold)
                                     }
                                 }
                             } else {
@@ -650,7 +660,7 @@ fun StockListScreen(
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(
-                                        text = "Menunggu verifikasi approval penjualan dari Sales Manager (Rudi/Hendra)...",
+                                        text = "Menunggu verifikasi approval penjualan dari Sales Manager...",
                                         fontSize = 10.sp,
                                         color = NavyPrimary,
                                         fontWeight = FontWeight.SemiBold,
@@ -896,11 +906,11 @@ fun StockListScreen(
 
     if (unitForSoldForm != null) {
         if (role == "Sales") {
-            SoldProposalFormDialog(
+            SoldPhotoUploadDialog(
                 unit = unitForSoldForm!!,
                 onDismiss = { unitForSoldForm = null },
-                onSubmit = { proposal, gimmicks ->
-                    viewModel.submitSoldProposal(unitForSoldForm!!, proposal, gimmicks, context)
+                onPhotoCaptured = { uri ->
+                    viewModel.submitSoldPhoto(unitForSoldForm!!, uri.toString())
                     unitForSoldForm = null
                 }
             )
@@ -921,6 +931,134 @@ fun StockListScreen(
             }
         )
     }
+
+    // --- MANAGER WORKFLOW DIALOGS ---
+
+    // 1. Rejection Confirmation
+    if (showRejectConfirm != null) {
+        AlertDialog(
+            onDismissRequest = { showRejectConfirm = null },
+            title = { Text("Batalkan Transaksi") },
+            text = { Text("Apakah anda yakin untuk membatalkan transaksi ini?") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.releaseHoldOrRejectSold(showRejectConfirm!!)
+                        showRejectConfirm = null
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = TerjualRed)
+                ) { Text("Ya") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showRejectConfirm = null }) { Text("Tidak") }
+            }
+        )
+    }
+
+    // 2. Manager Fill UTJ Form for Approval
+    if (unitForManagerApproval != null) {
+        var existingProposal by remember { mutableStateOf<SoldProposal?>(null) }
+        var isLoadingProposal by remember { mutableStateOf(true) }
+
+        LaunchedEffect(unitForManagerApproval) {
+            existingProposal = viewModel.getSoldProposalForUnit(unitForManagerApproval!!.id)
+            isLoadingProposal = false
+        }
+
+        if (!isLoadingProposal) {
+            SoldProposalFormDialog(
+                unit = unitForManagerApproval!!,
+                existingProposal = existingProposal,
+                isReadOnly = false,
+                onDismiss = { unitForManagerApproval = null },
+                onSubmit = { filledProposal, gimmicks ->
+                    showApproveConfirm = Pair(unitForManagerApproval!!, filledProposal)
+                    unitForManagerApproval = null
+                }
+            )
+        }
+    }
+
+    // 3. Final Approval Confirmation
+    if (showApproveConfirm != null) {
+        AlertDialog(
+            onDismissRequest = { showApproveConfirm = null },
+            title = { Text("Konfirmasi Penjualan") },
+            text = { Text("Apakah anda yakin semua data sudah sesuai?") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val (unit, proposal) = showApproveConfirm!!
+                        viewModel.approveSoldUnit(unit, proposal)
+                        showApproveConfirm = null
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = TersediaGreen)
+                ) { Text("Ya") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showApproveConfirm = null }) { Text("Tidak") }
+            }
+        )
+    }
+}
+
+@Composable
+fun SoldPhotoUploadDialog(
+    unit: HousingUnit,
+    onDismiss: () -> Unit,
+    onPhotoCaptured: (Uri) -> Unit
+) {
+    var photoUri by remember { mutableStateOf<Uri?>(null) }
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        photoUri = uri
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Upload Foto Form UTJ") },
+        text = {
+            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                Text("Unit: ${unit.clusterName} - ${unit.block}", fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Box(
+                    modifier = Modifier
+                        .size(200.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color.LightGray.copy(alpha = 0.3f))
+                        .clickable { launcher.launch("image/*") }
+                        .border(1.dp, NavyPrimary, RoundedCornerShape(12.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (photoUri == null) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(Icons.Default.AddAPhoto, contentDescription = null, modifier = Modifier.size(48.dp))
+                            Text("Klik untuk pilih foto")
+                        }
+                    } else {
+                        AsyncImage(
+                            model = photoUri,
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { photoUri?.let { onPhotoCaptured(it) } },
+                enabled = photoUri != null,
+                colors = ButtonDefaults.buttonColors(containerColor = TersediaGreen)
+            ) { Text("Kirim Foto") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Batal") }
+        }
+    )
 }
 
 @Composable
