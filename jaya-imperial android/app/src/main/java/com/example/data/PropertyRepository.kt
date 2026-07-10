@@ -71,12 +71,13 @@ class PropertyRepository(private val propertyDao: PropertyDao) {
                     }
 
                     if (localMatch != null) {
-                        // Hilangkan proteksi "Pending Sold" yang kaku agar status bisa kembali ke "Tersedia" jika dibatalkan
+                        // Update existing unit while preserving critical local data if server is null
                         propertyDao.updateUnit(remoteUnit.copy(
                             id = localMatch.id,
                             status = remoteUnit.status,
-                            actionByUser = remoteUnit.actionByUser,
-                            actionUserLabel = remoteUnit.actionUserLabel
+                            actionByUser = remoteUnit.actionByUser ?: localMatch.actionByUser,
+                            actionUserLabel = remoteUnit.actionUserLabel ?: localMatch.actionUserLabel,
+                            holdTimestamp = remoteUnit.holdTimestamp ?: localMatch.holdTimestamp ?: System.currentTimeMillis()
                         ))
                     } else {
                         propertyDao.insertUnit(remoteUnit)
@@ -100,7 +101,8 @@ class PropertyRepository(private val propertyDao: PropertyDao) {
                         // Update existing user (don't overwrite local PIN if it matches email)
                         propertyDao.insertUser(remoteUser.copy(
                             pin = existing.pin,
-                            authToken = existing.authToken
+                            authToken = existing.authToken,
+                            managerName = remoteUser.managerName ?: existing.managerName
                         ))
                     } else {
                         propertyDao.insertUser(remoteUser)

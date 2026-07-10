@@ -51,6 +51,7 @@ fun OmzetReportScreen(
 ) {
     val currentUser by viewModel.currentUser.collectAsState()
     val rawSalesLogs by viewModel.salesLogs.collectAsState()
+    val allUnits by viewModel.allUnits.collectAsState()
     val startDate by viewModel.startDate.collectAsState()
     val endDate by viewModel.endDate.collectAsState()
     val allUsers by viewModel.allUsers.collectAsState()
@@ -68,31 +69,95 @@ fun OmzetReportScreen(
     var selectedManagerFilter by remember { mutableStateOf<String?> (null) }
 
     // Derive reporting logs based on selections and authorizations
-    val reportingLogs = remember(rawSalesLogs, currentUser, selectedSalespersonFilter, selectedManagerFilter, startDate, endDate) {
-        var logs = rawSalesLogs.filter { it.timestamp in startDate..endDate }
+    val reportingLogs = remember(rawSalesLogs, allUnits, currentUser, selectedSalespersonFilter, selectedManagerFilter, startDate, endDate) {
+        val currentUsername = currentUser?.username?.lowercase() ?: ""
+        val currentShortName = currentUsername.substringBefore("@").trim().lowercase()
+        val currentDisplayName = currentUser?.name?.lowercase() ?: ""
+
+        // Capture mutable state into local immutable vals to allow smart casting
+        val salespersonFilter = selectedSalespersonFilter
+        val managerFilter = selectedManagerFilter
+
+        // 1. Start with explicit sales logs from local DB
+        val logs = rawSalesLogs.toMutableList()
+
+        // 2. Synthesize logs from "Terjual" units
+        val unitLogs = allUnits.filter { it.status == "Terjual" }.map { unit ->
+            val rawTs = unit.holdTimestamp ?: System.currentTimeMillis()
+            // AUTO-FIX: Convert Seconds (Laravel) to Milliseconds (Android) if needed
+            val correctedTs = if (rawTs in 1L..9_999_999_999L) rawTs * 1000 else if (rawTs <= 0) System.currentTimeMillis() else rawTs
+
+            val soldBy = unit.actionByUser ?: unit.actionUserLabel ?: ""
+            // LOOKUP MANAGER FROM USERS LIST
+            val managerOfSales = allUsers.find {
+                it.username.lowercase() == soldBy.lowercase() ||
+                it.name.lowercase() == soldBy.lowercase() ||
+                it.username.substringBefore("@").lowercase() == soldBy.substringBefore("@").lowercase()
+            }?.managerName
+
+            val cal = Calendar.getInstance().apply { timeInMillis = correctedTs }
+            SalesLog(
+                id = -unit.id,
+                clusterName = unit.clusterName,
+                block = unit.block,
+                salePrice = unit.price,
+                monthIndex = cal.get(Calendar.MONTH) + 1,
+                year = cal.get(Calendar.YEAR),
+                timestamp = correctedTs,
+                soldBy = soldBy,
+                managerName = managerOfSales
+            )
+        }
+
+        // Merge and deduplicate by block
+        val combined = (unitLogs + logs).distinctBy {
+            "${it.clusterName.trim().lowercase()}-${it.block.trim().lowercase()}"
+        }
 
         val isAdminRole = role.contains("ADMIN", ignoreCase = true) || role.contains("Admin", ignoreCase = true)
         val isManagerRole = role.contains("MANAGER", ignoreCase = true) || role.contains("Manager", ignoreCase = true)
 
-        if (isAdminRole) {
-            if (selectedManagerFilter != null) {
-                logs = logs.filter { it.managerName == selectedManagerFilter }
-            }
-            if (selectedSalespersonFilter != null) {
-                logs = logs.filter { it.soldBy == selectedSalespersonFilter }
-            }
-        } else if (isManagerRole) {
-            val teamMembers = allUsers.filter { it.managerName == username }.map { it.username }
-            logs = logs.filter { it.managerName == username || teamMembers.contains(it.soldBy) || it.soldBy == username }
+        var filtered = combined.filter { log ->
+            // Filter by Date - Broaden to catch any timezone/sync shifts
+            val matchesDate = log.timestamp in (startDate - 86400000).. (endDate + 86400000)
 
-            if (selectedSalespersonFilter != null) {
-                logs = logs.filter { it.soldBy == selectedSalespersonFilter }
+            // Filter by Identity/Role
+            val matchesIdentity = if (isAdminRole) {
+                val matchesManager = managerFilter == null || log.managerName?.lowercase() == managerFilter.lowercase()
+                val matchesSales = salespersonFilter == null ||
+                                   log.soldBy.lowercase().contains(salespersonFilter.lowercase()) ||
+                                   log.soldBy.substringBefore("@").lowercase().contains(salespersonFilter.substringBefore("@").lowercase())
+                matchesManager && matchesSales
+            } else if (isManagerRole) {
+                val teamMembers = allUsers.filter {
+                    it.managerName?.lowercase() == currentUsername ||
+                    (it.managerName?.isNotEmpty() == true && currentUsername.contains(it.managerName!!.lowercase())) ||
+                    it.managerName?.lowercase() == currentShortName
+                }.map { it.username.lowercase() }
+
+                val isMyTeam = log.managerName?.lowercase() == currentUsername ||
+                               log.managerName?.lowercase() == currentShortName ||
+                               teamMembers.any { it.contains(log.soldBy.lowercase()) || log.soldBy.lowercase().contains(it) } ||
+                               log.soldBy.lowercase().contains(currentShortName) ||
+                               currentUsername.contains(log.soldBy.lowercase())
+
+                val matchesSalesFilter = salespersonFilter == null ||
+                                         log.soldBy.lowercase().contains(salespersonFilter.lowercase())
+                isMyTeam && matchesSalesFilter
+            } else {
+                // Sales role - extremely permissive matching for Sri
+                val soldByLower = log.soldBy.lowercase().trim().replace("@", "")
+                val cleanUser = currentUsername.replace("@", "")
+                val cleanShort = currentShortName.replace("@", "")
+
+                soldByLower.contains(cleanShort) ||
+                cleanUser.contains(soldByLower.ifEmpty { "never" }) ||
+                (currentDisplayName.isNotEmpty() && (soldByLower.contains(currentDisplayName) || currentDisplayName.contains(soldByLower)))
             }
-        } else {
-            // Default to Sales role
-            logs = logs.filter { it.soldBy == username }
+
+            matchesDate && matchesIdentity
         }
-        logs
+        filtered
     }
 
     // Recalculate indicators dynamically
@@ -496,7 +561,7 @@ fun OmzetReportScreen(
             // --- LEADERBOARD & INDIVIDUAL METRICS ---
             if (role == "Sales Manager" || role == "Admin" || role == "Super Admin") {
                 Text(
-                    text = if (role == "Sales Manager") "LEADERBOARD TIM MANAGER (RUDI)" else "LEADERBOARD SUPERVISOR TIM",
+                    text = if (role == "Sales Manager") "LEADERBOARD TIM MANAGER (${currentUser?.name?.uppercase() ?: "SAYA"})" else "LEADERBOARD SUPERVISOR TIM",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     color = NavyPrimary,

@@ -209,7 +209,8 @@ interface PropertyApiService {
         val id: Int,
         val name: String,
         val email: String,
-        val role: String? = null
+        val role: String? = null,
+        val manager_name: String? = null
     ) {
         fun toEntity(): User {
             val sanitizedRole = when {
@@ -222,7 +223,8 @@ interface PropertyApiService {
                 username = email,
                 name = name,
                 role = sanitizedRole,
-                pin = "123456"
+                pin = "123456",
+                managerName = manager_name
             )
         }
     }

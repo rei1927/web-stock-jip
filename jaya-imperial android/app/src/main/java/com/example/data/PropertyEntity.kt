@@ -49,10 +49,10 @@ data class SalesLog(
     val block: String,
     val salePrice: Double,
     val monthIndex: Int, // 1 to 12 representing Jan to Dec
-    val year: Int = 2026,
-    val timestamp: Long = System.currentTimeMillis(), // added for precise range filtering
-    val soldBy: String = "siska", // Username of the salesperson who sold it
-    val managerName: String? = "rudi" // Manager of that salesperson
+    val year: Int,
+    val timestamp: Long = System.currentTimeMillis(),
+    val soldBy: String, // Username or email of the salesperson
+    val managerName: String? // Manager of that salesperson
 )
 
 @Entity(tableName = "sales_teams")

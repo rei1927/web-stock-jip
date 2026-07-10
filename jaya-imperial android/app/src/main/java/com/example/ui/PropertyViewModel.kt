@@ -49,6 +49,7 @@ class PropertyViewModel(private val repository: PropertyRepository) : ViewModel(
 
     // Period filtering (Start Date & End Date)
     private val _startDate = MutableStateFlow(Calendar.getInstance().apply {
+        add(Calendar.YEAR, -1) // Start from 1 year ago to be safe
         set(Calendar.DAY_OF_YEAR, 1)
         set(Calendar.HOUR_OF_DAY, 0)
         set(Calendar.MINUTE, 0)
@@ -56,7 +57,12 @@ class PropertyViewModel(private val repository: PropertyRepository) : ViewModel(
     }.timeInMillis)
     val startDate: StateFlow<Long> = _startDate.asStateFlow()
 
-    private val _endDate = MutableStateFlow(System.currentTimeMillis())
+    private val _endDate = MutableStateFlow(Calendar.getInstance().apply {
+        set(Calendar.HOUR_OF_DAY, 23)
+        set(Calendar.MINUTE, 59)
+        set(Calendar.SECOND, 59)
+        set(Calendar.MILLISECOND, 999)
+    }.timeInMillis)
     val endDate: StateFlow<Long> = _endDate.asStateFlow()
 
     private val _propertyPrice = MutableStateFlow(1500000000.0)
@@ -511,7 +517,7 @@ class PropertyViewModel(private val repository: PropertyRepository) : ViewModel(
         viewModelScope.launch {
             val user = _currentUser.value
             val salesperson = repository.getUserByUsername(unit.actionByUser ?: "")
-            val updatedUnit = unit.copy(status = "Terjual", isSold = true, holdTimestamp = null)
+            val updatedUnit = unit.copy(status = "Terjual", isSold = true)
 
             repository.updateUnit(updatedUnit)
 

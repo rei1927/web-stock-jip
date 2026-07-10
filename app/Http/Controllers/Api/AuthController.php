@@ -52,6 +52,7 @@ class AuthController extends Controller
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:4',
             'role' => 'required|string',
+            'manager_name' => 'nullable|string',
         ]);
 
         $roleMap = [
@@ -69,6 +70,7 @@ class AuthController extends Controller
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'role' => $dbRole,
+            'manager_name' => $request->manager_name,
         ]);
 
         return response()->json([
@@ -87,6 +89,7 @@ class AuthController extends Controller
         $request->validate([
             'email' => 'required|email|exists:users,email',
             'role' => 'required|string',
+            'manager_name' => 'nullable|string',
         ]);
 
         $roleMap = [
@@ -101,6 +104,9 @@ class AuthController extends Controller
 
         $user = User::where('email', $request->email)->first();
         $user->role = $dbRole;
+        if ($request->has('manager_name')) {
+            $user->manager_name = $request->manager_name;
+        }
         $user->save();
 
         return response()->json([
