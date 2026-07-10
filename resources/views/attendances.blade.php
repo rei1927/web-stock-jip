@@ -69,7 +69,10 @@
                       </td>
                       <td class="align-middle text-center">
                         @if($record->photo_url)
-                            <a href="javascript:;" onclick="document.getElementById('modalPhotoImage').style.display='block'; document.getElementById('modalPhotoError').style.display='none'; document.getElementById('modalPhotoImage').src='{{ $record->photo_url }}'; document.getElementById('modalPhotoUrlText').innerText='{{ $record->photo_url }}';" data-bs-toggle="modal" data-bs-target="#photoModal" class="text-secondary" title="Lihat Foto">
+                            @php
+                                $finalUrl = route('attendance.photo', ['filename' => basename($record->photo_url)]);
+                            @endphp
+                            <a href="javascript:;" onclick="document.getElementById('modalPhotoImage').style.display='block'; document.getElementById('modalPhotoError').style.display='none'; document.getElementById('modalPhotoImage').src='{{ $finalUrl }}'; document.getElementById('modalPhotoUrlText').innerText='{{ $record->photo_url }} (Routed via: {{ $finalUrl }})';" data-bs-toggle="modal" data-bs-target="#photoModal" class="text-secondary" title="Lihat Foto">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#17c1e8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
                             </a>
                         @else
