@@ -492,7 +492,16 @@ class PropertyViewModel(private val repository: PropertyRepository) : ViewModel(
                 repository.updateUnitStatusOnServer(token, updatedUnit)
             }
 
-            repository.insertSalesLog(SalesLog(clusterName = unit.clusterName, block = unit.block, salePrice = unit.price, monthIndex = 6, year = 2026, soldBy = user.username, managerName = if (user.role == "Sales Manager") user.username else user.managerName))
+            val cal = Calendar.getInstance()
+            repository.insertSalesLog(SalesLog(
+                clusterName = unit.clusterName,
+                block = unit.block,
+                salePrice = unit.price,
+                monthIndex = cal.get(Calendar.MONTH) + 1,
+                year = cal.get(Calendar.YEAR),
+                soldBy = user.username,
+                managerName = if (user.role == "Sales Manager") user.username else user.managerName
+            ))
             repository.deleteSoldProposalForUnit(unit.id)
             repository.insertNotification(NotificationEntity(title = "SOLD ${unit.block}", message = "${user.name} menandai unit sebagai TERJUAL.", timestamp = System.currentTimeMillis()))
         }
@@ -520,7 +529,16 @@ class PropertyViewModel(private val repository: PropertyRepository) : ViewModel(
                 }
             }
 
-            repository.insertSalesLog(SalesLog(clusterName = unit.clusterName, block = unit.block, salePrice = finalProposal?.hargaJual ?: unit.price, monthIndex = 6, year = 2026, soldBy = unit.actionByUser ?: "siska", managerName = salesperson?.managerName ?: user?.username))
+            val cal = Calendar.getInstance()
+            repository.insertSalesLog(SalesLog(
+                clusterName = unit.clusterName,
+                block = unit.block,
+                salePrice = finalProposal?.hargaJual ?: unit.price,
+                monthIndex = cal.get(Calendar.MONTH) + 1,
+                year = cal.get(Calendar.YEAR),
+                soldBy = unit.actionByUser ?: user?.username ?: "",
+                managerName = salesperson?.managerName ?: user?.username
+            ))
             repository.deleteSoldProposalForUnit(unit.id)
             repository.insertNotification(NotificationEntity(title = "SOLD APPROVED ${unit.block}", message = "Penjualan disetujui oleh ${user?.name}.", timestamp = System.currentTimeMillis()))
         }

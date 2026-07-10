@@ -87,7 +87,7 @@ fun SoldProposalFormDialog(
     }
 
     val isPhotoUploaded = photoUri != null
-    val isFormValid = if (isReadOnly) true else (namaLengkap.isNotBlank() && isPhotoUploaded)
+    val isFormValid = if (isReadOnly) true else namaLengkap.isNotBlank()
 
     Dialog(
         onDismissRequest = onDismiss,

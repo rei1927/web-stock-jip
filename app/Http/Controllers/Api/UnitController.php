@@ -124,7 +124,7 @@ class UnitController extends Controller
     public function submitSold(Request $request)
     {
         $request->validate([
-            'unitId' => 'required|exists:units,id',
+            'unit_id' => 'required|exists:units,id',
             'namaLengkap' => 'required|string',
             'noKtpConsumer' => 'required|string',
             // other fields are optional/nullable in schema
@@ -133,7 +133,7 @@ class UnitController extends Controller
         try {
             \Illuminate\Support\Facades\DB::beginTransaction();
 
-            $unit = Unit::findOrFail($request->unitId);
+            $unit = Unit::findOrFail($request->unit_id);
 
             // Update or Create Customer
             $customer = \App\Models\Customer::updateOrCreate(
@@ -163,7 +163,7 @@ class UnitController extends Controller
             }
 
             // transaction details
-            $trxDetails = $request->except(['unitId', 'namaLengkap', 'noKtpConsumer', 'alamatKtp', 'noTelpSeluler', 'noNpwp', 'email']);
+            $trxDetails = $request->except(['unit_id', 'namaLengkap', 'noKtpConsumer', 'alamatKtp', 'noTelpSeluler', 'noNpwp', 'email']);
 
             $transaction = \App\Models\Transaction::create([
                 'unit_id' => $unit->id,

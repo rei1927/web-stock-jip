@@ -58,6 +58,7 @@ fun StockListScreen(
     var showAddDialog by remember { mutableStateOf(false) }
     var selectedUnitDetail by remember { mutableStateOf<HousingUnit?>(null) }
     var unitForSoldForm by remember { mutableStateOf<HousingUnit?>(null) }
+    var capturedPhotoUriBySales by remember { mutableStateOf<String?>(null) }
     var unitToEdit by remember { mutableStateOf<HousingUnit?>(null) }
     var unitForManagerApproval by remember { mutableStateOf<HousingUnit?>(null) }
     var showRejectConfirm by remember { mutableStateOf<HousingUnit?>(null) }
@@ -906,14 +907,29 @@ fun StockListScreen(
 
     if (unitForSoldForm != null) {
         if (role == "Sales") {
-            SoldPhotoUploadDialog(
-                unit = unitForSoldForm!!,
-                onDismiss = { unitForSoldForm = null },
-                onPhotoCaptured = { uri ->
-                    viewModel.submitSoldPhoto(unitForSoldForm!!, uri.toString())
-                    unitForSoldForm = null
-                }
-            )
+            if (capturedPhotoUriBySales == null) {
+                SoldPhotoUploadDialog(
+                    unit = unitForSoldForm!!,
+                    onDismiss = { unitForSoldForm = null },
+                    onPhotoCaptured = { uri ->
+                        capturedPhotoUriBySales = uri.toString()
+                    }
+                )
+            } else {
+                SoldProposalFormDialog(
+                    unit = unitForSoldForm!!,
+                    existingProposal = SoldProposal(unitId = unitForSoldForm!!.id, photoUri = capturedPhotoUriBySales),
+                    onDismiss = {
+                        unitForSoldForm = null
+                        capturedPhotoUriBySales = null
+                    },
+                    onSubmit = { proposal, gimmicks ->
+                        viewModel.submitSoldProposal(unitForSoldForm!!, proposal, gimmicks, context)
+                        unitForSoldForm = null
+                        capturedPhotoUriBySales = null
+                    }
+                )
+            }
         } else {
             // Managers/Admins can set sold directly from the main button,
             // so we just clear this state if they reach here.

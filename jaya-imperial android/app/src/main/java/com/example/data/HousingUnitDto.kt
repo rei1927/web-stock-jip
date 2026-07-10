@@ -29,13 +29,6 @@ data class HousingUnitDto(
             else -> "Tersedia"
         }
 
-        // Emergency fallback: If backend doesn't send actionByUser, try to extract from status string
-        // Example: "HOLD by sri" -> actionByUser: "sri"
-        var extractedUser = this.actionByUser
-        if (extractedUser.isNullOrEmpty() && rawStatus.contains("BY ")) {
-            extractedUser = this.status.substringAfter("by ", "").substringAfter("BY ", "").trim()
-        }
-
         return HousingUnit(
             clusterName = this.clusterName,
             block = this.block,
@@ -48,8 +41,8 @@ data class HousingUnitDto(
             bathrooms = this.bathrooms,
             notes = this.notes ?: "",
             status = normalizedStatus,
-            actionByUser = extractedUser,
-            actionUserLabel = this.actionUserLabel ?: extractedUser,
+            actionByUser = this.actionByUser,
+            actionUserLabel = this.actionUserLabel,
             holdTimestamp = this.holdTimestamp
         )
     }

@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.data.HousingUnit
+import com.example.data.SoldProposal
 import com.example.ui.theme.*
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -127,14 +128,29 @@ fun SalesRecapScreen(
 
     // Sold Form Dialog
     if (unitForSoldForm != null) {
-        SoldProposalFormDialog(
-            unit = unitForSoldForm!!,
-            onDismiss = { unitForSoldForm = null },
-            onSubmit = { proposal, gimmicks ->
-                viewModel.submitSoldProposal(unitForSoldForm!!, proposal, gimmicks, context)
-                unitForSoldForm = null
-            }
-        )
+        var existingProposal by remember { mutableStateOf<SoldProposal?>(null) }
+        var isLoadingProposal by remember { mutableStateOf(true) }
+
+        LaunchedEffect(unitForSoldForm) {
+            existingProposal = viewModel.getSoldProposalForUnit(unitForSoldForm!!.id)
+            isLoadingProposal = false
+        }
+
+        if (!isLoadingProposal) {
+            SoldProposalFormDialog(
+                unit = unitForSoldForm!!,
+                existingProposal = existingProposal,
+                onDismiss = {
+                    unitForSoldForm = null
+                    existingProposal = null
+                },
+                onSubmit = { proposal, gimmicks ->
+                    viewModel.submitSoldProposal(unitForSoldForm!!, proposal, gimmicks, context)
+                    unitForSoldForm = null
+                    existingProposal = null
+                }
+            )
+        }
     }
 }
 
@@ -260,6 +276,17 @@ fun UnitDetailDialogRecap(
                             Icon(Icons.Default.AddPhotoAlternate, contentDescription = null)
                             Spacer(modifier = Modifier.width(8.dp))
                             Text("Ajukan Sold (Upload Form UTJ)", fontWeight = FontWeight.Bold)
+                        }
+                    } else if (unit.status == "Pending Sold") {
+                        Button(
+                            onClick = onAjukanSold,
+                            modifier = Modifier.fillMaxWidth().height(50.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = NavyPrimary),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Icon(Icons.Default.EditNote, contentDescription = null)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Lengkapi / Edit Form Sold", fontWeight = FontWeight.Bold)
                         }
                     }
                 }

@@ -177,17 +177,16 @@ fun ReviewPenjualanScreen(
         }
         val proposal = proposalState.value
 
-        if (proposal != null) {
-            SoldProposalFormDialog(
-                unit = approvingUnit!!,
-                existingProposal = proposal,
-                onDismiss = { approvingUnit = null },
-                onSubmit = { finalProposal: SoldProposal, selectedGimmicks: List<String> ->
-                    viewModel.approveSoldUnit(approvingUnit!!, finalProposal, selectedGimmicks)
-                    approvingUnit = null
-                }
-            )
-        }
+        // Manager can still approve even if proposal is partially empty (only has photo)
+        SoldProposalFormDialog(
+            unit = approvingUnit!!,
+            existingProposal = proposal ?: SoldProposal(unitId = uId),
+            onDismiss = { approvingUnit = null },
+            onSubmit = { finalProposal: SoldProposal, selectedGimmicks: List<String> ->
+                viewModel.approveSoldUnit(approvingUnit!!, finalProposal, selectedGimmicks)
+                approvingUnit = null
+            }
+        )
     }
 
     if (viewingProposalForUnitId != null) {

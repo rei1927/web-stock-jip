@@ -514,21 +514,43 @@ fun OmzetReportScreen(
                 ) {
                     Column(modifier = Modifier.padding(14.dp)) {
                         if (role == "Sales Manager") {
-                            // Compare Siska and Ani
-                            val siskaLogs = reportingLogs.filter { it.soldBy == "siska" }
-                            val aniLogs = reportingLogs.filter { it.soldBy == "ani" }
+                            // Dynamic Leaderboard for Sales Manager (show team members)
+                            val performanceMap = reportingLogs.groupBy { it.soldBy }
+                                .mapValues { entry -> Pair(entry.value.size, entry.value.sumOf { it.salePrice }) }
+                                .toList()
+                                .sortedByDescending { it.second.second } // Sort by Omzet
 
-                            LeaderRow(name = "Siska Lestari (Sales)", unitCount = siskaLogs.size, omzetVal = siskaLogs.sumOf { it.salePrice })
-                            Divider(modifier = Modifier.padding(vertical = 10.dp), color = BorderLight)
-                            LeaderRow(name = "Ani Wijaya (Sales)", unitCount = aniLogs.size, omzetVal = aniLogs.sumOf { it.salePrice })
+                            if (performanceMap.isEmpty()) {
+                                Text("Belum ada data penjualan tim.", fontSize = 12.sp, color = Color.Gray, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
+                            } else {
+                                performanceMap.forEachIndexed { index, (soldBy, data) ->
+                                    val (count, omzet) = data
+                                    val displayName = allUsers.find { it.username == soldBy }?.name ?: soldBy
+                                    LeaderRow(name = "$displayName (Sales)", unitCount = count, omzetVal = omzet)
+                                    if (index < performanceMap.size - 1) {
+                                        Divider(modifier = Modifier.padding(vertical = 10.dp), color = BorderLight)
+                                    }
+                                }
+                            }
                         } else {
-                            // Admin / Super Admin compares Rudi's group vs Hendra's group
-                            val rudiTeamLogs = reportingLogs.filter { it.managerName == "rudi" }
-                            val hendraTeamLogs = reportingLogs.filter { it.managerName == "hendra" }
+                            // Dynamic Leaderboard for Admin/Super Admin (show Managers)
+                            val performanceMap = reportingLogs.groupBy { it.managerName ?: "Tanpa Manager" }
+                                .mapValues { entry -> Pair(entry.value.size, entry.value.sumOf { it.salePrice }) }
+                                .toList()
+                                .sortedByDescending { it.second.second }
 
-                            LeaderRow(name = "Kelompok Tim Rudi (SM)", unitCount = rudiTeamLogs.size, omzetVal = rudiTeamLogs.sumOf { it.salePrice })
-                            Divider(modifier = Modifier.padding(vertical = 10.dp), color = BorderLight)
-                            LeaderRow(name = "Kelompok Tim Hendra (SM)", unitCount = hendraTeamLogs.size, omzetVal = hendraTeamLogs.sumOf { it.salePrice })
+                            if (performanceMap.isEmpty()) {
+                                Text("Belum ada data penjualan developer.", fontSize = 12.sp, color = Color.Gray, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
+                            } else {
+                                performanceMap.forEachIndexed { index, (mgr, data) ->
+                                    val (count, omzet) = data
+                                    val displayName = allUsers.find { it.username == mgr }?.name ?: mgr
+                                    LeaderRow(name = "Tim $displayName (SM)", unitCount = count, omzetVal = omzet)
+                                    if (index < performanceMap.size - 1) {
+                                        Divider(modifier = Modifier.padding(vertical = 10.dp), color = BorderLight)
+                                    }
+                                }
+                            }
                         }
                     }
                 }
