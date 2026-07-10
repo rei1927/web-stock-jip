@@ -9,19 +9,19 @@
           <div class="row">
             <div class="col-8">
               <div class="numbers">
-                <p class="text-sm mb-0 text-capitalize font-weight-bold">
-                  Omzet
-                  <span class="dropdown d-inline">
-                    <a href="#" class="ms-1 dropdown-toggle text-secondary" data-bs-toggle="dropdown" id="periodDropdown" aria-expanded="false">
-                      {{ ucfirst(request()->query('period', 'daily')) }}
+                <div class="d-flex align-items-center justify-content-between">
+                  <p class="text-sm mb-0 text-capitalize font-weight-bold">Omzet</p>
+                  <div class="dropdown">
+                    <a href="javascript:;" class="text-secondary text-xs font-weight-bold" data-bs-toggle="dropdown" id="periodDropdown" aria-expanded="false">
+                      {{ ucfirst(request()->query('period', 'daily')) }} <i class="fas fa-chevron-down ms-1"></i>
                     </a>
-                    <ul class="dropdown-menu" aria-labelledby="periodDropdown">
-                      <li><a class="dropdown-item" href="?period=daily">Daily (Harian)</a></li>
-                      <li><a class="dropdown-item" href="?period=weekly">Weekly (Mingguan)</a></li>
-                      <li><a class="dropdown-item" href="?period=monthly">Monthly (Bulanan)</a></li>
+                    <ul class="dropdown-menu px-2 py-2" aria-labelledby="periodDropdown">
+                      <li><a class="dropdown-item border-radius-md" href="?period=daily">Daily (Harian)</a></li>
+                      <li><a class="dropdown-item border-radius-md" href="?period=weekly">Weekly (Mingguan)</a></li>
+                      <li><a class="dropdown-item border-radius-md" href="?period=monthly">Monthly (Bulanan)</a></li>
                     </ul>
-                  </span>
-                </p>
+                  </div>
+                </div>
                 <h5 class="font-weight-bolder mb-0">
                   Rp {{ number_format($currentOmzet, 0, ',', '.') }}
                   <span class="{{ $omzetChange >= 0 ? 'text-success' : 'text-danger' }} text-sm font-weight-bolder">
